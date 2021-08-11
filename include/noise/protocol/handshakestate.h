@@ -32,6 +32,9 @@ extern "C" {
 
 typedef struct NoiseHandshakeState_s NoiseHandshakeState;
 
+typedef int (*NoiseHandshakeHookFunc)
+    (NoiseHandshakeState *state, void *user_data);
+
 int noise_handshakestate_new_by_id
     (NoiseHandshakeState **state, const NoiseProtocolId *protocol_id, int role);
 int noise_handshakestate_new_by_name
@@ -48,10 +51,11 @@ NoiseDHState *noise_handshakestate_get_fixed_ephemeral_dh
     (NoiseHandshakeState *state);
 NoiseDHState *noise_handshakestate_get_fixed_hybrid_dh
     (NoiseHandshakeState *state);
-int noise_handshakestate_needs_pre_shared_key(const NoiseHandshakeState *state);
 int noise_handshakestate_has_pre_shared_key(const NoiseHandshakeState *state);
 int noise_handshakestate_set_pre_shared_key
     (NoiseHandshakeState *state, const uint8_t *key, size_t key_len);
+int noise_handshakestate_set_pre_shared_key_hook
+    (NoiseHandshakeState *state, NoiseHandshakeHookFunc hook, void *user_data);
 int noise_handshakestate_set_prologue
     (NoiseHandshakeState *state, const void *prologue, size_t prologue_len);
 int noise_handshakestate_needs_local_keypair(const NoiseHandshakeState *state);
@@ -60,7 +64,7 @@ int noise_handshakestate_needs_remote_public_key(const NoiseHandshakeState *stat
 int noise_handshakestate_has_remote_public_key(const NoiseHandshakeState *state);
 int noise_handshakestate_start(NoiseHandshakeState *state);
 int noise_handshakestate_fallback(NoiseHandshakeState *state);
-int noise_handshakestate_fallback_to(NoiseHandshakeState *state, int pattern_id);
+int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pattern);
 int noise_handshakestate_get_action(const NoiseHandshakeState *state);
 int noise_handshakestate_write_message
     (NoiseHandshakeState *state, NoiseBuffer *message, const NoiseBuffer *payload);

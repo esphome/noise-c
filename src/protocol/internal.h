@@ -53,6 +53,11 @@ extern "C" {
 #define NOISE_PSK_LEN 32
 
 /**
+ * \brief Maximum number of tokens in a message pattern.
+ */
+#define NOISE_MAX_TOKENS 64
+
+/**
  * \brief Internal structure of the NoiseCipherState type.
  */
 struct NoiseCipherState_s
@@ -542,6 +547,9 @@ struct NoiseHandshakeState_s
     /** \brief Next action to be taken by the application */
     int action;
 
+    /** \brief Expanded message pattern for the current handshake */
+    uint8_t pattern[NOISE_MAX_TOKENS];
+
     /** \brief Points to the next message pattern tokens to be processed */
     const uint8_t *tokens;
 
@@ -578,6 +586,12 @@ struct NoiseHandshakeState_s
     /** \brief Length of the pre-shared key value: zero or NOISE_PSK_LEN only */
     size_t pre_shared_key_len;
 
+    /** \brief Hook function to call to obtain the pre-shared key */
+    NoiseHandshakeHookFunc pre_shared_hook_func;
+
+    /** \brief User data to pass to the pre-shared key hook function */
+    void *pre_shared_user_data;
+
     /** \brief Points to the prologue value */
     uint8_t *prologue;
 
@@ -595,6 +609,7 @@ struct NoiseHandshakeState_s
 #define NOISE_TOKEN_SS          6   /**< "ss" token */
 #define NOISE_TOKEN_F           7   /**< "f" token (hybrid forward secrecy) */
 #define NOISE_TOKEN_FF          8   /**< "ff" token (hybrid forward secrecy) */
+#define NOISE_TOKEN_PSK         9   /**< "psk" token */
 #define NOISE_TOKEN_FLIP_DIR    255 /**< Flip the handshake direction */
 
 /** Pattern requires a local static keypair */
@@ -637,16 +652,14 @@ struct NoiseHandshakeState_s
 #define NOISE_REQ_LOCAL_REQUIRED        (1 << 0)
 /** Remote public key is required for the handshake */
 #define NOISE_REQ_REMOTE_REQUIRED       (1 << 1)
-/** Pre-shared key has not been provided yet */
-#define NOISE_REQ_PSK                   (1 << 2)
 /** Emphemeral key for fallback pre-message has been provided */
-#define NOISE_REQ_FALLBACK_PREMSG       (1 << 3)
+#define NOISE_REQ_FALLBACK_PREMSG       (1 << 2)
 /** Local public key is part of the pre-message */
-#define NOISE_REQ_LOCAL_PREMSG          (1 << 4)
+#define NOISE_REQ_LOCAL_PREMSG          (1 << 3)
 /** Remote public key is part of the pre-message */
-#define NOISE_REQ_REMOTE_PREMSG         (1 << 5)
+#define NOISE_REQ_REMOTE_PREMSG         (1 << 4)
 /** Fallback is possible from this pattern (two-way, ends in "K") */
-#define NOISE_REQ_FALLBACK_POSSIBLE     (1 << 6)
+#define NOISE_REQ_FALLBACK_POSSIBLE     (1 << 5)
 
 void noise_rand_bytes(void *bytes, size_t size);
 
@@ -672,6 +685,9 @@ typedef uint16_t NoisePatternFlags_t;
 
 const uint8_t *noise_pattern_lookup(int id);
 NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_t flags);
+int noise_pattern_expand
+    (uint8_t pattern[NOISE_MAX_TOKENS], int pattern_id,
+     const int *modifiers, size_t num_modifiers);
 
 #ifdef __cplusplus
 };

@@ -85,35 +85,17 @@ static NoiseIdMapping const algorithm_names[] = {
     {NOISE_PATTERN_IN,          "IN",            2},
     {NOISE_PATTERN_IK,          "IK",            2},
     {NOISE_PATTERN_IX,          "IX",            2},
-    {NOISE_PATTERN_XX_FALLBACK, "XXfallback",   10},
-    {NOISE_PATTERN_X_NOIDH,     "Xnoidh",        6},
-    {NOISE_PATTERN_NX_NOIDH,    "NXnoidh",       7},
-    {NOISE_PATTERN_XX_NOIDH,    "XXnoidh",       7},
-    {NOISE_PATTERN_KX_NOIDH,    "KXnoidh",       7},
-    {NOISE_PATTERN_IK_NOIDH,    "IKnoidh",       7},
-    {NOISE_PATTERN_IX_NOIDH,    "IXnoidh",       7},
-    {NOISE_PATTERN_NN_HFS,      "NNhfs",         5},
-    {NOISE_PATTERN_NK_HFS,      "NKhfs",         5},
-    {NOISE_PATTERN_NX_HFS,      "NXhfs",         5},
-    {NOISE_PATTERN_XN_HFS,      "XNhfs",         5},
-    {NOISE_PATTERN_XK_HFS,      "XKhfs",         5},
-    {NOISE_PATTERN_XX_HFS,      "XXhfs",         5},
-    {NOISE_PATTERN_KN_HFS,      "KNhfs",         5},
-    {NOISE_PATTERN_KK_HFS,      "KKhfs",         5},
-    {NOISE_PATTERN_KX_HFS,      "KXhfs",         5},
-    {NOISE_PATTERN_IN_HFS,      "INhfs",         5},
-    {NOISE_PATTERN_IK_HFS,      "IKhfs",         5},
-    {NOISE_PATTERN_IX_HFS,      "IXhfs",         5},
-    {NOISE_PATTERN_XX_FALLBACK_HFS, "XXfallback+hfs", 14},
-    {NOISE_PATTERN_NX_NOIDH_HFS,"NXnoidh+hfs",  11},
-    {NOISE_PATTERN_XX_NOIDH_HFS,"XXnoidh+hfs",  11},
-    {NOISE_PATTERN_KX_NOIDH_HFS,"KXnoidh+hfs",  11},
-    {NOISE_PATTERN_IK_NOIDH_HFS,"IKnoidh+hfs",  11},
-    {NOISE_PATTERN_IX_NOIDH_HFS,"IXnoidh+hfs",  11},
+
+    /* Handshake pattern modifiers */
+    {NOISE_MODIFIER_FALLBACK,   "fallback",      8},
+    {NOISE_MODIFIER_HFS,        "hfs",           3},
+    {NOISE_MODIFIER_PSK0,       "psk0",          4},
+    {NOISE_MODIFIER_PSK1,       "psk1",          4},
+    {NOISE_MODIFIER_PSK2,       "psk2",          4},
+    {NOISE_MODIFIER_PSK3,       "psk3",          4},
 
     /* Protocol name prefixes */
     {NOISE_PREFIX_STANDARD,     "Noise",         5},
-    {NOISE_PREFIX_PSK,          "NoisePSK",      8},
 
     /* Signature algorithms */
     {NOISE_SIGN_ED25519,        "Ed25519",       7},
@@ -130,7 +112,7 @@ static NoiseIdMapping const algorithm_names[] = {
  * \param category The category of identifier to look for; one of
  * NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY, NOISE_DH_CATEGORY,
  * NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY, NOISE_SIGN_CATEGORY,
- * or zero.  Zero indicates "any category".
+ * NOISE_MODIFIER_CATEGORY, or zero.  Zero indicates "any category".
  * \param name Points to the name to map.
  * \param name_len Length of the \a name in bytes.
  *
@@ -167,7 +149,7 @@ int noise_name_to_id(int category, const char *name, size_t name_len)
  * \param category The category of identifier to look for; one of
  * NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY, NOISE_DH_CATEGORY,
  * NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY, NOISE_SIGN_CATEGORY,
- * or zero.  Zero indicates "any category".
+ * NOISE_MODIFIER_CATEGORY, or zero.  Zero indicates "any category".
  * \param id The algorithm identifier to map.
  *
  * \return The NUL-terminated name of the algorithm, or NULL if the
@@ -193,6 +175,216 @@ const char *noise_id_to_name(int category, int id)
         ++mapping;
     }
     return 0;
+}
+
+/**
+ * \brief Maps a '+'-separated algorithm name into a list of identifier.
+ *
+ * \param ids Returns the list of identifiers parsed from the \a name.
+ * \param ids_len The maximum length of \a ids.
+ * \param name Points to the name to map.
+ * \param name_len Length of the \a name in bytes.
+ * \param category1 The category of the first identifier in the list; one of
+ * NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY, NOISE_DH_CATEGORY,
+ * NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY, NOISE_SIGN_CATEGORY,
+ * NOISE_MODIFIER_CATEGORY.
+ * \param category2 The category of the second and subsequent identifiers
+ * in the list; one of NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY,
+ * NOISE_DH_CATEGORY, NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY,
+ * NOISE_SIGN_CATEGORY, NOISE_MODIFIER_CATEGORY, or zero.  Zero indicates
+ * that the second category is identical to \a category1.
+ *
+ * \return The number of elements in the returned list or a negative
+ * error code otherwise.
+ *
+ * The algorithm names are expected to be separated with the '+'
+ * character.  As a special case when \a category1 is NOISE_PATTERN_CATEGORY
+ * and \category2 is NOISE_MODIFIER_CATEGORY, the first and second identifiers
+ * may be directly concatenated.
+ *
+ * \sa noise_ids_to_name_list()
+ */
+int noise_name_list_to_ids(int *ids, size_t ids_len,
+                           const char *name, size_t name_len,
+                           int category1, int category2)
+{
+    size_t index = 0;
+    size_t field_len;
+    int id;
+
+    /* Validate the parameters */
+    if (!ids || !name)
+        return -NOISE_ERROR_INVALID_PARAM;
+    if (!category2)
+        category2 = category1;
+
+    /* Extract the first identifier.  Special case for patterns */
+    if (category1 == NOISE_PATTERN_CATEGORY &&
+            category2 == NOISE_MODIFIER_CATEGORY) {
+        field_len = 0;
+        while (field_len < name_len && name[field_len] >= 'A' &&
+               name[field_len] <= 'Z') {
+            ++field_len;
+        }
+        if (field_len < name_len && name[field_len] == '+') {
+            /* Pattern base names cannot be followed by a '+'.
+               The first modifier should up right up against the name. */
+            return -NOISE_ERROR_UNKNOWN_NAME;
+        }
+        id = noise_name_to_id(category1, name, field_len);
+        name += field_len;
+        name_len -= field_len;
+    } else {
+        field_len = 0;
+        while (field_len < name_len && name[field_len] != '+') {
+            ++field_len;
+        }
+        id = noise_name_to_id(category1, name, field_len);
+        if (field_len < name_len) {
+            /* Skip the '+' separator and check that we have more text */
+            ++field_len;
+            if (field_len >= name_len) {
+                /* Name lists cannot end in '+' */
+                return -NOISE_ERROR_UNKNOWN_NAME;
+            }
+        }
+        name += field_len;
+        name_len -= field_len;
+    }
+    if (!id) {
+        /* Unknown name for the primary identifier */
+        return -NOISE_ERROR_UNKNOWN_NAME;
+    }
+    if (index >= ids_len) {
+        /* Not enough room in the return array */
+        return -NOISE_ERROR_INVALID_LENGTH;
+    }
+    ids[index++] = id;
+
+    /* Parse the secondary identifiers */
+    while (name_len > 0) {
+        field_len = 0;
+        while (field_len < name_len && name[field_len] != '+') {
+            ++field_len;
+        }
+        id = noise_name_to_id(category2, name, field_len);
+        if (!id) {
+            /* Unknown name for a secondary identifier */
+            return -NOISE_ERROR_UNKNOWN_NAME;
+        }
+        if (field_len < name_len) {
+            /* Skip the '+' separator and check that we have more text */
+            ++field_len;
+            if (field_len >= name_len) {
+                /* Name lists cannot end in '+' */
+                return -NOISE_ERROR_UNKNOWN_NAME;
+            }
+        }
+        name += field_len;
+        name_len -= field_len;
+        if (index >= ids_len) {
+            /* Not enough room in the return array */
+            return -NOISE_ERROR_INVALID_LENGTH;
+        }
+        ids[index++] = id;
+    }
+
+    /* Return the length of the parsed list to the caller */
+    return (int)index;
+}
+
+/**
+ * \brief Maps a list of algorithm identifiers to the corresponding name.
+ *
+ * \param name Output buffer for the name.
+ * \param name_len Length of the output buffer.
+ * \param ids List of algorithm identifiers to map.
+ * \param ids_len Number of algorithm identifiers in \a ids.
+ * \param category1 The category of the first identifier in the list; one of
+ * NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY, NOISE_DH_CATEGORY,
+ * NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY, NOISE_SIGN_CATEGORY,
+ * NOISE_MODIFIER_CATEGORY.
+ * \param category2 The category of the second and subsequent identifiers
+ * in the list; one of NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY,
+ * NOISE_DH_CATEGORY, NOISE_PATTERN_CATEGORY, NOISE_PREFIX_CATEGORY,
+ * NOISE_SIGN_CATEGORY, NOISE_MODIFIER_CATEGORY, or zero.  Zero indicates
+ * that the second category is identical to \a category1.
+ *
+ * \return NOISE_ERROR_NONE on success.
+ * \return NOISE_ERROR_INVALID_PARAM if \a name or \a ids are NULL,
+ * or \a name_len or \a ids_len is zero.
+ * \return NOISE_ERROR_UNKNOWN_ID if one or more of the identifiers in
+ * the \a ids array is unknown.
+ * \return NOISE_ERROR_INVALID_LENGTH if \a name_len is not large
+ * enough to hold the full name plus a terminating '\0'.
+ *
+ * The algorithm names in the list will be separated with the '+'
+ * character.  As a special case when \a category1 is NOISE_PATTERN_CATEGORY
+ * and \category2 is NOISE_MODIFIER_CATEGORY, the first and second identifiers
+ * will be directly concatenated.
+ *
+ * \sa noise_name_list_to_ids()
+ */
+int noise_ids_to_name_list(char *name, size_t name_len,
+                           const int *ids, size_t ids_len,
+                           int category1, int category2)
+{
+    const char *component;
+    size_t component_len;
+    size_t index = 0;
+
+    /* Validate the parameters */
+    if (!name || !name_len)
+        return NOISE_ERROR_INVALID_PARAM;
+    *name = '\0';
+    if (!ids || !ids_len)
+        return NOISE_ERROR_INVALID_PARAM;
+    if (!category2)
+        category2 = category1;
+
+    /* Output the first identifier followed optionally by a '+' separator */
+    component = noise_id_to_name(category1, ids[index++]);
+    if (!component)
+        return NOISE_ERROR_UNKNOWN_ID;
+    component_len = strlen(component);
+    if (component_len >= name_len)
+        return NOISE_ERROR_INVALID_LENGTH;
+    memcpy(name, component, component_len);
+    name += component_len;
+    name_len -= component_len;
+    name[0] = '\0';
+    if (index < ids_len && (category1 != NOISE_PATTERN_CATEGORY ||
+                            category2 != NOISE_MODIFIER_CATEGORY)) {
+        if (name_len < 2)
+            return NOISE_ERROR_INVALID_LENGTH;
+        name[0] = '+';
+        name[1] = '\0';
+        ++name;
+        --name_len;
+    }
+
+    /* Output the remaining identifiers separated by '+' */
+    while (index < ids_len) {
+        component = noise_id_to_name(category2, ids[index++]);
+        if (!component)
+            return NOISE_ERROR_UNKNOWN_ID;
+        component_len = strlen(component);
+        if (component_len >= name_len)
+            return NOISE_ERROR_INVALID_LENGTH;
+        memcpy(name, component, component_len);
+        name += component_len;
+        name_len -= component_len;
+        name[0] = '\0';
+        if (index < ids_len) {
+            if (name_len < 2)
+                return NOISE_ERROR_INVALID_LENGTH;
+            name[0] = '+';
+            name[1] = '\0';
+            ++name;
+            --name_len;
+        }
+    }
+    return NOISE_ERROR_NONE;
 }
 
 /**
@@ -251,6 +443,59 @@ static int noise_protocol_parse_field
 }
 
 /**
+ * \brief Parses a pattern name field from a protocol name string.
+ *
+ * \param modifiers Returns the modifiers for the pattern.
+ * \param name Points to the start of the protocol name string.
+ * \param len The total length of the protocol name string.
+ * \param posn The current position in the string, updated once the next
+ * field has been parsed.
+ * \param is_last Non-zero if this is the last expected field, or zero
+ * if we expect further fields to follow.
+ * \param ok Initialized to non-zero by the caller.  Will be set to zero
+ * if a parse error was encountered.
+ *
+ * \return The algorithm identifier for the pattern, or zero
+ * if the field's contents are invalid.
+ */
+static int noise_protocol_parse_pattern_field
+    (int modifiers[NOISE_MAX_MODIFIER_IDS], const char *name,
+     size_t len, size_t *posn, int *ok)
+{
+    size_t start, field_len;
+    int ids[NOISE_MAX_MODIFIER_IDS + 1];
+    int num_ids;
+
+    /* If the parse already failed, then nothing further to do */
+    if (!(*ok))
+        return 0;
+
+    /* Find the start and end of the current field */
+    start = *posn;
+    while (*posn < len && name[*posn] != '_')
+        ++(*posn);
+    field_len = *posn - start;
+
+    /* There should be a '_' here */
+    if (*posn >= len) {
+        *ok = 0;
+        return 0;
+    }
+    ++(*posn);  /* Skip the '_' */
+
+    /* Parse the field into pattern and modifier identifiers */
+    num_ids = noise_name_list_to_ids
+        (ids, NOISE_MAX_MODIFIER_IDS + 1, name + start, field_len,
+         NOISE_PATTERN_CATEGORY, NOISE_MODIFIER_CATEGORY);
+    if (num_ids < 1) {
+        *ok = 0;
+        return 0;
+    }
+    memcpy(modifiers, ids + 1, (num_ids - 1) * sizeof(int));
+    return ids[0];
+}
+
+/**
  * \brief Parses a dual field from a protocol name string; "field1+field2"
  * or simply "field1".
  *
@@ -272,7 +517,8 @@ static int noise_protocol_parse_dual_field
      size_t *posn, int *second_id, int *ok)
 {
     size_t start, field_len;
-    int first_id;
+    int ids[2];
+    int num_ids;
 
     /* Clear the second identifier before we start in case we don't find one */
     *second_id = 0;
@@ -283,35 +529,28 @@ static int noise_protocol_parse_dual_field
 
     /* Find the start and end of the current field */
     start = *posn;
-    while (*posn < len && name[*posn] != '_' && name[*posn] != '+')
+    while (*posn < len && name[*posn] != '_')
         ++(*posn);
     if (*posn >= len) {
-        /* Should be terminated with either '_' or '+' */
+        /* Should be terminated with '_' */
         *ok = 0;
         return 0;
     }
     field_len = *posn - start;
 
-    /* Look up the first name in the current category */
-    first_id = noise_name_to_id(category, name + start, field_len);
-    if (!first_id) {
+    /* Skip the terminating '_' */
+    ++(*posn);
+
+    /* Parse the dual field */
+    num_ids = noise_name_list_to_ids(ids, 2, name + start, field_len,
+                                     category, category);
+    if (num_ids < 1) {
         *ok = 0;
         return 0;
     }
-
-    /* If the next character is '_', then we are finished */
-    if (name[*posn] == '_') {
-        ++(*posn);
-        return first_id;
-    }
-
-    /* Parse the rest of the field until the next '_' as the second id */
-    ++(*posn);
-    *second_id = noise_protocol_parse_field(category, name, len, posn, 0, ok);
-    if (*second_id)
-        return first_id;
-    else
-        return 0;
+    if (num_ids >= 2)
+        *second_id = ids[1];
+    return ids[0];
 }
 
 /**
@@ -344,8 +583,8 @@ int noise_protocol_name_to_id
     memset(id, 0, sizeof(NoiseProtocolId));
     id->prefix_id = noise_protocol_parse_field
         (NOISE_PREFIX_CATEGORY, name, name_len, &posn, 0, &ok);
-    id->pattern_id = noise_protocol_parse_field
-        (NOISE_PATTERN_CATEGORY, name, name_len, &posn, 0, &ok);
+    id->pattern_id = noise_protocol_parse_pattern_field
+        (id->modifier_ids, name, name_len, &posn, &ok);
     id->dh_id = noise_protocol_parse_dual_field
         (NOISE_DH_CATEGORY, name, name_len, &posn, &(id->hybrid_id), &ok);
     id->cipher_id = noise_protocol_parse_field
@@ -371,14 +610,13 @@ int noise_protocol_name_to_id
  * \param name The name buffer to format the field into.
  * \param len The length of the \a name buffer in bytes.
  * \param posn The current format position within the \a name buffer.
- * \param is_last Non-zero if this is the last field in the name,
- * or zero if this field is not the last.
+ * \param term_char Terminator character: '_', '+', or '\0'.
  * \param err Points to an error code.  Initialized to NOISE_ERROR_NONE
  * by the caller and updated by this function if there is an error.
  */
 static void noise_protocol_format_field
     (int category, int id, char *name, size_t len, size_t *posn,
-     int is_last, int *err)
+     int term_char, int *err)
 {
     const char *alg_name;
     size_t alg_len;
@@ -395,7 +633,7 @@ static void noise_protocol_format_field
     }
     alg_len = strlen(alg_name);
 
-    /* Will the name fit into the buffer, followed by either '_' or '\0'? */
+    /* Will the name fit into the buffer, followed by the terminator? */
     if (alg_len >= (len - *posn)) {
         *err = NOISE_ERROR_INVALID_LENGTH;
         return;
@@ -404,8 +642,8 @@ static void noise_protocol_format_field
     *posn += alg_len;
 
     /* Add either a separator or a terminator */
-    if (!is_last)
-        name[(*posn)++] = '_';
+    if (term_char != '\0')
+        name[(*posn)++] = term_char;
     else
         name[*posn] = '\0';
 }
@@ -436,8 +674,8 @@ static void noise_protocol_format_field
 int noise_protocol_id_to_name
     (char *name, size_t name_len, const NoiseProtocolId *id)
 {
-    size_t posn;
-    int err;
+    size_t posn, modifier_num;
+    int err, term_char;
 
     /* Bail out if the parameters are incorrect */
     if (!id) {
@@ -454,29 +692,38 @@ int noise_protocol_id_to_name
     posn = 0;
     err = NOISE_ERROR_NONE;
     noise_protocol_format_field
-        (NOISE_PREFIX_CATEGORY, id->prefix_id, name, name_len, &posn, 0, &err);
+        (NOISE_PREFIX_CATEGORY, id->prefix_id, name, name_len, &posn, '_', &err);
+    term_char = '_';
+    if (id->modifier_ids[0] != NOISE_MODIFIER_NONE)
+        term_char = '\0';
     noise_protocol_format_field
-        (NOISE_PATTERN_CATEGORY, id->pattern_id, name, name_len, &posn, 0, &err);
+        (NOISE_PATTERN_CATEGORY, id->pattern_id, name, name_len,
+         &posn, term_char, &err);
+    for (modifier_num = 0; modifier_num < NOISE_MAX_MODIFIER_IDS &&
+         id->modifier_ids[modifier_num] != NOISE_MODIFIER_NONE; ++modifier_num) {
+        /* Append the modifier names to the base pattern name */
+        term_char = '+';
+        if ((modifier_num + 1) >= NOISE_MAX_MODIFIER_IDS ||
+                id->modifier_ids[modifier_num + 1] == NOISE_MODIFIER_NONE)
+            term_char = '_';
+        noise_protocol_format_field
+            (NOISE_MODIFIER_CATEGORY, id->modifier_ids[modifier_num],
+             name, name_len, &posn, term_char, &err);
+    }
     if (!id->hybrid_id) {
         noise_protocol_format_field
-            (NOISE_DH_CATEGORY, id->dh_id, name, name_len, &posn, 0, &err);
+            (NOISE_DH_CATEGORY, id->dh_id, name, name_len, &posn, '_', &err);
     } else {
         /* Format the DH names as "dh_id+hybrid_id"; e.g. "25519+NewHope" */
         noise_protocol_format_field
-            (NOISE_DH_CATEGORY, id->dh_id, name, name_len, &posn, 1, &err);
-        if (err == NOISE_ERROR_NONE) {
-            if ((posn + 1) < name_len)
-                name[posn++] = '+';
-            else
-                err = NOISE_ERROR_INVALID_LENGTH;
-        }
+            (NOISE_DH_CATEGORY, id->dh_id, name, name_len, &posn, '+', &err);
         noise_protocol_format_field
-            (NOISE_DH_CATEGORY, id->hybrid_id, name, name_len, &posn, 0, &err);
+            (NOISE_DH_CATEGORY, id->hybrid_id, name, name_len, &posn, '_', &err);
     }
     noise_protocol_format_field
-        (NOISE_CIPHER_CATEGORY, id->cipher_id, name, name_len, &posn, 0, &err);
+        (NOISE_CIPHER_CATEGORY, id->cipher_id, name, name_len, &posn, '_', &err);
     noise_protocol_format_field
-        (NOISE_HASH_CATEGORY, id->hash_id, name, name_len, &posn, 1, &err);
+        (NOISE_HASH_CATEGORY, id->hash_id, name, name_len, &posn, '\0', &err);
 
     /* The reserved identifiers must be zero.  We don't know how to
        format reserved identifiers other than zero */

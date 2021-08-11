@@ -48,6 +48,15 @@
  */
 
 /**
+ * \typedef NoiseHandshakeHookFunc
+ * \brief A callback hook function for handshake operations.
+ *
+ * This function should return NOISE_ERROR_NONE if it was successful,
+ * or a Noise error code otherwise.  An error return will abort the
+ * current handshake message.
+ */
+
+/**
  * \brief Gets the initial requirements for a handshake pattern.
  *
  * \param flags The flags from the handshake pattern.
@@ -77,9 +86,6 @@ static int noise_handshakestate_requirements
         if (is_fallback)
             requirements |= NOISE_REQ_FALLBACK_PREMSG;
     }
-    if (prefix_id == NOISE_PREFIX_PSK) {
-        requirements |= NOISE_REQ_PSK;
-    }
     return requirements;
 }
 
@@ -102,6 +108,8 @@ static int noise_handshakestate_requirements
 static int noise_handshakestate_new
     (NoiseHandshakeState **state, NoiseSymmetricState *symmetric, int role)
 {
+    uint8_t tokens[NOISE_MAX_TOKENS];
+    size_t num_modifiers;
     const uint8_t *pattern;
     int dh_id;
     int hybrid_id;
@@ -112,11 +120,18 @@ static int noise_handshakestate_new
     int remote_dh_role;
 
     /* Locate the information for the current handshake pattern */
-    pattern = noise_pattern_lookup(symmetric->id.pattern_id);
-    if (!pattern) {
+    num_modifiers = 0;
+    while (num_modifiers < NOISE_MAX_MODIFIER_IDS &&
+                symmetric->id.modifier_ids[num_modifiers] != 0) {
+        ++num_modifiers;
+    }
+    if (noise_pattern_expand(tokens, symmetric->id.pattern_id,
+                             symmetric->id.modifier_ids, num_modifiers)
+            != NOISE_ERROR_NONE) {
         noise_symmetricstate_free(symmetric);
         return NOISE_ERROR_UNKNOWN_ID;
     }
+    pattern = tokens;
     flags = ((NoisePatternFlags_t)(pattern[0])) |
            (((NoisePatternFlags_t)(pattern[1])) << 8);
     if ((flags & NOISE_PAT_FLAG_REMOTE_REQUIRED) != 0)
@@ -158,7 +173,8 @@ static int noise_handshakestate_new
     (*state)->requirements = extra_reqs | noise_handshakestate_requirements
         (flags, symmetric->id.prefix_id, role, 0);
     (*state)->action = NOISE_ACTION_NONE;
-    (*state)->tokens = pattern + 2;
+    memcpy((*state)->pattern, tokens, NOISE_MAX_TOKENS);
+    (*state)->tokens = (*state)->pattern + 2;
     (*state)->role = role;
     (*state)->symmetric = symmetric;
 
@@ -518,25 +534,6 @@ NoiseDHState *noise_handshakestate_get_fixed_hybrid_dh
 }
 
 /**
- * \brief Determine if a HandshakeState object requires a pre shared key.
- *
- * \param state The HandshakeState object.
- *
- * \return Returns 1 if \a state requires a pre shared key, zero if the
- * pre shared key has already been supplied or it is not required.
- *
- * \sa noise_handshakestate_set_pre_shared_key(),
- * noise_handshakestate_has_pre_shared_key()
- */
-int noise_handshakestate_needs_pre_shared_key(const NoiseHandshakeState *state)
-{
-    if (!state || state->pre_shared_key_len)
-        return 0;
-    else
-        return (state->requirements & NOISE_REQ_PSK) != 0;
-}
-
-/**
  * \brief Determine if a HandshakeState object has already been configured
  * with a pre shared key.
  *
@@ -544,8 +541,7 @@ int noise_handshakestate_needs_pre_shared_key(const NoiseHandshakeState *state)
  *
  * \return Returns 1 if \a state has a pre shared key, zero if not.
  *
- * \sa noise_handshakestate_set_pre_shared_key(),
- * noise_handshakestate_needs_pre_shared_key()
+ * \sa noise_handshakestate_set_pre_shared_key()
  */
 int noise_handshakestate_has_pre_shared_key(const NoiseHandshakeState *state)
 {
@@ -566,14 +562,15 @@ int noise_handshakestate_has_pre_shared_key(const NoiseHandshakeState *state)
  * \return NOISE_ERROR_NONE on success.
  * \return NOISE_ERROR_INVALID_PARAM if \a state or \a key is NULL.
  * \return NOISE_ERROR_INVALID_LENGTH if \a key_len is not 32.
- * \return NOISE_ERROR_NOT_APPLICABLE if the protocol name does not
- * begin with "NoisePSK".
- * \return NOISE_ERROR_INVALID_STATE if this function is called after
- * the protocol has already started.
+ *
+ * The pre-shared key can be supplied at any time during the handshake
+ * before a "psk" token is encountered.  It does not need to be supplied
+ * before the handshake starts.  If the protocol does not require a PSK,
+ * then the value will be ignored.
  *
  * \sa noise_handshakestate_start(), noise_handshakestate_set_prologue(),
- * noise_handshakestate_needs_pre_shared_key(),
- * noise_handshakestate_has_pre_shared_key()
+ * noise_handshakestate_has_pre_shared_key(),
+ * noise_handshakestate_set_pre_shared_key_hook()
  */
 int noise_handshakestate_set_pre_shared_key
     (NoiseHandshakeState *state, const uint8_t *key, size_t key_len)
@@ -583,15 +580,48 @@ int noise_handshakestate_set_pre_shared_key
         return NOISE_ERROR_INVALID_PARAM;
     if (key_len != NOISE_PSK_LEN)
         return NOISE_ERROR_INVALID_LENGTH;
-    if (state->symmetric->id.prefix_id != NOISE_PREFIX_PSK)
-        return NOISE_ERROR_NOT_APPLICABLE;
-    if (state->action != NOISE_ACTION_NONE)
-        return NOISE_ERROR_INVALID_STATE;
 
     /* Record the pre-shared key for use in noise_handshakestate_start() */
     memcpy(state->pre_shared_key, key, key_len);
     state->pre_shared_key_len = key_len;
     return NOISE_ERROR_NONE;
+}
+
+/**
+ * \brief Sets a hook function to be called just before a "psk"
+ * token is processed in a message.
+ *
+ * \param state The HandshakeState object.
+ * \param hook The hook function to call, or NULL to remove the hook.
+ * \param user_data A user data pointer to pass to the hook function.
+ *
+ * \return NOISE_ERROR_NONE on success.
+ * \return NOISE_ERROR_INVALID_PARAM if \a state is NULL.
+ *
+ * The purpose of the PSK hook function is to allow the application to
+ * look up the PSK at runtime based on information earlier in the
+ * current message.  For example, the initiator may send their public
+ * key and then mix in their PSK at the end of the message.  The responder
+ * needs to look up the public key in a database to find the appropriate
+ * PSK to use for that initiator.  The hook function calls
+ * noise_handshakestate_set_pre_shared_key() after it locates the PSK.
+ *
+ * The hook function should return NOISE_ERROR_NONE if the PSK was
+ * set on the \a state or NOISE_ERROR_PSK_REQUIRED if it could not obtain
+ * the PSK for some reason.
+ *
+ * \sa noise_handshakestate_set_pre_shared_key()
+ */
+int noise_handshakestate_set_pre_shared_key_hook
+    (NoiseHandshakeState *state, NoiseHandshakeHookFunc hook, void *user_data)
+{
+    if (state) {
+        state->pre_shared_hook_func = hook;
+        state->pre_shared_user_data = user_data;
+        return NOISE_ERROR_NONE;
+    } else {
+        return NOISE_ERROR_INVALID_PARAM;
+    }
 }
 
 /**
@@ -755,21 +785,6 @@ static void noise_handshakestate_mix_public_key
 }
 
 /**
- * \brief Mixes a public key value into the chaining key.
- *
- * \param state The HandshakeState object.
- * \param dh The DHState for the key to mix in.  Can be NULL.
- */
-static void noise_handshakestate_mix_chaining_key
-    (NoiseHandshakeState *state, const NoiseDHState *dh)
-{
-    if (noise_dhstate_has_public_key(dh)) {
-        noise_symmetricstate_mix_key
-            (state->symmetric, dh->public_key, dh->public_key_len);
-    }
-}
-
-/**
  * \brief Starts the handshake on a HandshakeState object.
  *
  * \param state The HandshakeState object.
@@ -804,9 +819,11 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
         return NOISE_ERROR_INVALID_PARAM;
     if (state->action != NOISE_ACTION_NONE)
         return NOISE_ERROR_INVALID_STATE;
+    /* FIXME
     if (state->symmetric->id.pattern_id == NOISE_PATTERN_XX_FALLBACK &&
             (state->requirements & NOISE_REQ_FALLBACK_PREMSG) == 0)
         return NOISE_ERROR_NOT_APPLICABLE;
+    */
 
     /* Check that we have satisfied all of the pattern requirements */
     if ((state->requirements & NOISE_REQ_LOCAL_REQUIRED) != 0 &&
@@ -815,9 +832,6 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
     if ((state->requirements & NOISE_REQ_REMOTE_REQUIRED) != 0 &&
             !noise_dhstate_has_public_key(state->dh_remote_static))
         return NOISE_ERROR_REMOTE_KEY_REQUIRED;
-    if ((state->requirements & NOISE_REQ_PSK) != 0 &&
-            state->pre_shared_key_len == 0)
-        return NOISE_ERROR_PSK_REQUIRED;
 
     /* Hash the prologue value */
     if (state->prologue_len) {
@@ -827,18 +841,6 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
         /* No prologue, so hash an empty one */
         noise_symmetricstate_mix_hash
             (state->symmetric, state->pre_shared_key, 0);
-    }
-
-    /* Mix the pre shared key into the chaining key and handshake hash */
-    if (state->pre_shared_key_len) {
-        uint8_t temp[NOISE_MAX_HASHLEN];
-        NoiseHashState *hash = state->symmetric->hash;
-        noise_hashstate_hkdf
-            (hash, state->symmetric->ck, hash->hash_len,
-             state->pre_shared_key, state->pre_shared_key_len,
-             state->symmetric->ck, hash->hash_len, temp, hash->hash_len);
-        noise_symmetricstate_mix_hash(state->symmetric, temp, hash->hash_len);
-        noise_clean(temp, sizeof(temp));
     }
 
     /* Mix the pre-supplied public keys into the handshake hash */
@@ -851,10 +853,6 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
                 noise_handshakestate_mix_public_key
                     (state, state->dh_remote_hybrid);
             }
-            if ((state->requirements & NOISE_REQ_PSK) != 0) {
-                noise_handshakestate_mix_chaining_key
-                    (state, state->dh_remote_ephemeral);
-            }
         }
         if (state->requirements & NOISE_REQ_REMOTE_PREMSG)
             noise_handshakestate_mix_public_key(state, state->dh_remote_static);
@@ -866,10 +864,6 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
             if (state->dh_local_hybrid) {
                 noise_handshakestate_mix_public_key
                     (state, state->dh_local_hybrid);
-            }
-            if ((state->requirements & NOISE_REQ_PSK) != 0) {
-                noise_handshakestate_mix_chaining_key
-                    (state, state->dh_local_ephemeral);
             }
         }
         if (state->requirements & NOISE_REQ_LOCAL_PREMSG)
@@ -920,24 +914,25 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
  */
 int noise_handshakestate_fallback(NoiseHandshakeState *state)
 {
-    return noise_handshakestate_fallback_to(state, NOISE_PATTERN_XX_FALLBACK);
+    return noise_handshakestate_fallback_to(state, "XXfallback");
 }
 
 /**
  * \brief Falls back to another handshake pattern.
  *
  * \param state The HandshakeState object.
- * \param pattern_id The identifier for the pattern to fallback to;
- * e.g. NOISE_PATTERN_XX_FALLBACK, NOISE_PATTERN_NX_FALLBACK, etc.
+ * \param pattern The name of the pattern to fallback to;
+ * e.g. "XXfallback", "NXfallback", etc.
  *
  * \return NOISE_ERROR_NONE on error.
- * \return NOISE_ERROR_INVALID_PARAM if \a state is NULL.
+ * \return NOISE_ERROR_INVALID_PARAM if \a state or \a pattern is NULL.
+ * \return NOISE_ERROR_UNKNOWN_NAME if \a pattern is not a valid pattern name.
  * \return NOISE_ERROR_INVALID_STATE if the previous protocol has not
  * been started or has not reached the fallback position yet.
  * \return NOISE_ERROR_INVALID_LENGTH if the new protocol name is too long.
  * \return NOISE_ERROR_NOT_APPLICABLE if the handshake pattern in the
- * original protocol name is not compatible with \a pattern_id.
- * \return NOISE_ERROR_NOT_APPLICABLE if \a pattern_id does not
+ * original protocol name is not compatible with \a pattern.
+ * \return NOISE_ERROR_NOT_APPLICABLE if \a pattern does not
  * identify a fallback pattern.
  *
  * This function is a generalization of the "Noise Pipes" protocol,
@@ -947,7 +942,7 @@ int noise_handshakestate_fallback(NoiseHandshakeState *state)
  *
  * This function resets a HandshakeState object with the original
  * handshake pattern, and converts it into an object with the new handshake
- * \a pattern_id.  Information from the previous session such as the local
+ * \a pattern.  Information from the previous session such as the local
  * keypair, the initiator's ephemeral key, the prologue value, and the
  * pre-shared key, are passed to the new session.
  *
@@ -970,18 +965,20 @@ int noise_handshakestate_fallback(NoiseHandshakeState *state)
  *
  * \sa noise_handshakestate_start(), noise_handshakestate_fallback()
  */
-int noise_handshakestate_fallback_to(NoiseHandshakeState *state, int pattern_id)
+int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pattern)
 {
     char name[NOISE_MAX_PROTOCOL_NAME];
     size_t hash_len;
     size_t name_len;
     NoiseProtocolId id;
-    const uint8_t *pattern;
+    uint8_t tokens[NOISE_MAX_TOKENS];
     NoisePatternFlags_t flags;
+    int ids[NOISE_MAX_MODIFIER_IDS + 1];
+    int num_ids;
     int err;
 
-    /* Validate the parameter */
-    if (!state)
+    /* Validate the parameters */
+    if (!state || !pattern)
         return NOISE_ERROR_INVALID_PARAM;
 
     /* The original pattern must end in "K" for fallback to be possible */
@@ -989,10 +986,15 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, int pattern_id)
             (state->requirements & NOISE_REQ_FALLBACK_POSSIBLE) == 0)
         return NOISE_ERROR_NOT_APPLICABLE;
 
-    /* Check that "pattern_id" supports fallback */
-    pattern = noise_pattern_lookup(pattern_id);
-    if (!pattern)
-        return NOISE_ERROR_NOT_APPLICABLE;
+    /* Check that the new pattern supports fallback */
+    num_ids = noise_name_list_to_ids
+        (ids, NOISE_MAX_MODIFIER_IDS + 1, pattern, strlen(pattern),
+         NOISE_PATTERN_CATEGORY, NOISE_MODIFIER_CATEGORY);
+    if (num_ids < 1)
+        return NOISE_ERROR_UNKNOWN_NAME;
+    if (noise_pattern_expand(tokens, ids[0], ids + 1, num_ids - 1)
+            != NOISE_ERROR_NONE)
+        return NOISE_ERROR_UNKNOWN_NAME;
     flags = ((NoisePatternFlags_t)(pattern[0])) |
            (((NoisePatternFlags_t)(pattern[1])) << 8);
     if ((flags & NOISE_PAT_FLAG_REMOTE_EPHEM_REQ) == 0)
@@ -1025,13 +1027,16 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, int pattern_id)
 
     /* Format a new protocol name for the fallback variant */
     id = state->symmetric->id;
-    id.pattern_id = pattern_id;
+    id.pattern_id = ids[0];
+    memcpy(id.modifier_ids, ids + 1, (num_ids - 1) * sizeof(int));
+    if (num_ids <= NOISE_MAX_MODIFIER_IDS)
+        id.modifier_ids[num_ids - 1] = 0;
     err = noise_protocol_id_to_name(name, sizeof(name), &id);
     if (err != NOISE_ERROR_NONE)
         return err;
 
     /* Convert the HandshakeState to the fallback pattern */
-    state->symmetric->id.pattern_id = pattern_id;
+    state->symmetric->id = id;
     if (state->role == NOISE_ROLE_INITIATOR) {
         noise_dhstate_clear_key(state->dh_remote_ephemeral);
         noise_dhstate_clear_key(state->dh_remote_hybrid);
@@ -1046,7 +1051,8 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, int pattern_id)
     }
 
     /* Start a new token pattern for the fallback */
-    state->tokens = pattern + 2;
+    memcpy(state->pattern, tokens, NOISE_MAX_TOKENS);
+    state->tokens = state->pattern + 2;
     state->action = NOISE_ACTION_NONE;
 
     /* Set up the key requirements for the fallback */
@@ -1208,14 +1214,6 @@ static int noise_handshakestate_write
             memcpy(rest.data, state->dh_local_ephemeral->public_key, len);
             noise_symmetricstate_mix_hash(state->symmetric, rest.data, len);
             rest.size += len;
-
-            /* If the protocol is using pre-shared keys, then also mix
-               the local ephemeral key into the chaining key */
-            if (state->symmetric->id.prefix_id == NOISE_PREFIX_PSK) {
-                err = noise_symmetricstate_mix_key
-                    (state->symmetric,
-                     state->dh_local_ephemeral->public_key, len);
-            }
             break;
         case NOISE_TOKEN_S:
             /* Encrypt the local static public key and add it to the message */
@@ -1303,6 +1301,25 @@ static int noise_handshakestate_write
             err = noise_handshake_mix_dh
                 (state, state->dh_local_hybrid, state->dh_remote_hybrid);
             break;
+        case NOISE_TOKEN_PSK:
+            /* Mix in the pre-shared symmetric key */
+            if (state->pre_shared_hook_func != 0) {
+                /* Call the hook function to possibly obtain the PSK */
+                err = (*(state->pre_shared_hook_func))
+                    (state, state->pre_shared_user_data);
+                if (err != NOISE_ERROR_NONE)
+                    break;
+            }
+            if (state->pre_shared_key_len != 0) {
+                /* Mix the pre-shared key into the chaining key and hash */
+                err = noise_symmetricstate_mix_key_and_hash
+                    (state->symmetric, state->pre_shared_key,
+                     state->pre_shared_key_len);
+            } else {
+                /* We don't have a pre-shared symmetric key, so fail */
+                err = NOISE_ERROR_PSK_REQUIRED;
+            }
+            break;
         default:
             /* Unknown token code in the pattern.  This shouldn't happen.
                If it does, then abort immediately. */
@@ -1355,6 +1372,8 @@ static int noise_handshakestate_write
  * not NOISE_ACTION_WRITE_MESSAGE.
  * \return NOISE_ERROR_INVALID_LENGTH if \a message is too small to contain
  * all of the bytes that need to be written to it.
+ * \return NOISE_ERROR_PSK_REQUIRED if a "psk" token was encountered in
+ * the message but a pre-shared symmetric key has not been supplied yet.
  *
  * The \a message and \a payload buffers must not overlap in memory.
  *
@@ -1471,14 +1490,6 @@ static int noise_handshakestate_read
             msg.data += len;
             msg.size -= len;
             msg.max_size -= len;
-
-            /* If the protocol is using pre-shared keys, then also mix
-               the remote ephemeral key into the chaining key */
-            if (state->symmetric->id.prefix_id == NOISE_PREFIX_PSK) {
-                err = noise_symmetricstate_mix_key
-                    (state->symmetric,
-                     state->dh_remote_ephemeral->public_key, len);
-            }
             break;
         case NOISE_TOKEN_S:
             /* Decrypt and read the remote static key */
@@ -1576,6 +1587,25 @@ static int noise_handshakestate_read
             err = noise_handshake_mix_dh
                 (state, state->dh_local_hybrid, state->dh_remote_hybrid);
             break;
+        case NOISE_TOKEN_PSK:
+            /* Mix in the pre-shared symmetric key */
+            if (state->pre_shared_hook_func != 0) {
+                /* Call the hook function to possibly obtain the PSK */
+                err = (*(state->pre_shared_hook_func))
+                    (state, state->pre_shared_user_data);
+                if (err != NOISE_ERROR_NONE)
+                    break;
+            }
+            if (state->pre_shared_key_len != 0) {
+                /* Mix the pre-shared key into the chaining key and hash */
+                err = noise_symmetricstate_mix_key_and_hash
+                    (state->symmetric, state->pre_shared_key,
+                     state->pre_shared_key_len);
+            } else {
+                /* We don't have a pre-shared symmetric key, so fail */
+                err = NOISE_ERROR_PSK_REQUIRED;
+            }
+            break;
         default:
             /* Unknown token code in the pattern.  This shouldn't happen.
                If it does, then abort immediately. */
@@ -1621,6 +1651,8 @@ static int noise_handshakestate_read
  * which terminates the handshake.
  * \return NOISE_ERROR_PUBLIC_KEY if an invalid remote public key is seen
  * during the processing of this message.
+ * \return NOISE_ERROR_PSK_REQUIRED if a "psk" token was encountered in
+ * the message but a pre-shared symmetric key has not been supplied yet.
  *
  * If \a payload is NULL, then the message payload will be authenticated
  * and then discarded, regardless of its length.  If the application was
