@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-int noise_init(void);
+int noise_init_framework(void);
 
 #define noise_new(type) ((type *)noise_new_object(sizeof(type)))
 void *noise_new_object(size_t size);

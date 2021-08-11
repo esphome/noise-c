@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_SHA256
+
 #include "sha256.h"
 #include <string.h>
 
@@ -179,3 +182,5 @@ void sha256_finish(sha256_context_t *context, uint8_t *hash)
     for (posn = 0; posn < 8; ++posn)
         write_be32(hash + posn * 4, context->h[posn]);
 }
+
+#endif  // NOISE_USE_REFERENCE_SHA256

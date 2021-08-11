@@ -21,7 +21,7 @@
  */
 
 #include "simple-handshakestate.h"
-#include "internal.h"
+#include "protocol/internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

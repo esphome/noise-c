@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#ifdef NOISE_USE_REFERENCE_CHACHA
+
 #include "chacha.h"
 #include <string.h>
 
@@ -310,3 +313,5 @@ void chacha_encrypt_bytes(chacha_ctx *x, const uint8_t *m, uint8_t *c, uint32_t 
 }
 
 #endif /* !USE_VECTOR_MATH */
+
+#endif  // NOISE_USE_REFERENCE_CHACHA

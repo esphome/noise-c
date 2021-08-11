@@ -22,6 +22,9 @@
  * from the sample implementation.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_DONNA_CURVE25519
+
 #include <string.h>
 #include <stdint.h>
 
@@ -447,3 +450,5 @@ curve25519_donna(u8 *mypublic, const u8 *secret, const u8 *basepoint) {
   fcontract(mypublic, z);
   return 0;
 }
+
+#endif  // NOISE_USE_REFERENCE_DONNA_CURVE25519

@@ -24,7 +24,7 @@
 #define __SIMPLE_HANDSHAKESTATE_H__
 
 #include "simple-symmetricstate.h"
-#include "internal.h"
+#include "protocol/internal.h"
 
 #define MAX_DH_KEY_LEN  2048
 #define MAX_PSK_LEN     32

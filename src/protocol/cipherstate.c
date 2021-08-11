@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 #include <string.h>
 
 /**
@@ -83,13 +83,17 @@ int noise_cipherstate_new_by_id(NoiseCipherState **state, int id)
     /* Create the CipherState object for the "id" */
     *state = 0;
     switch (id) {
+#if NOISE_USE_CHACHAPOLY
     case NOISE_CIPHER_CHACHAPOLY:
         *state = noise_chachapoly_new();
         break;
+#endif
 
+#if NOISE_USE_AES
     case NOISE_CIPHER_AESGCM:
         *state = noise_aesgcm_new();
         break;
+#endif
 
     default:
         return NOISE_ERROR_UNKNOWN_ID;

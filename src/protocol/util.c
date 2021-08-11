@@ -21,8 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
-#if USE_LIBSODIUM
+#include "noise/defines.h"
+#include "protocol/internal.h"
+#if NOISE_USE_LIBSODIUM
 #include <sodium.h>
 typedef crypto_hash_sha256_state sha256_context_t;
 #define sha256_reset(ctx) crypto_hash_sha256_init(ctx)
@@ -31,12 +32,12 @@ typedef crypto_hash_sha256_state sha256_context_t;
 #else
 #include "crypto/sha2/sha256.h"
 #endif
-#if USE_OPENSSL
+#if NOISE_USE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #endif
 #include <stdlib.h>
-#if HAVE_PTHREAD
+#if NOISE_USE_PTHREAD
 #include <pthread.h>
 static pthread_once_t noise_is_initialized = PTHREAD_ONCE_INIT;
 #endif
@@ -53,11 +54,11 @@ static pthread_once_t noise_is_initialized = PTHREAD_ONCE_INIT;
 
 void noise_init_helper(void)
 {
-#if USE_LIBSODIUM
+#if NOISE_USE_LIBSODIUM
     if (sodium_init() < 0)
         return;
 #endif
-#if USE_OPENSSL
+#if NOISE_USE_OPENSSL
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 #endif
@@ -76,7 +77,7 @@ void noise_init_helper(void)
 /**@{*/
 
 /**
- * \fn noise_init()
+ * \fn noise_init_framework()
  * \brief Initializes the Noise-c library.
  *
  * \return NOISE_ERROR_NONE on success.
@@ -84,9 +85,9 @@ void noise_init_helper(void)
  * This will initialize the underlying crypto libraries.
  * You don't need to call this if you initialize the crypto libraries (eg. libsodium, OpenSSL) yourself.
  */
-int noise_init(void)
+int noise_init_framework(void)
 {
-#if HAVE_PTHREAD
+#if NOISE_USE_PTHREAD
     if (pthread_once(&noise_is_initialized, noise_init_helper) != 0)
         return NOISE_ERROR_SYSTEM;
 #else

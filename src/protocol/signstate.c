@@ -20,7 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_SIGN
+#include "protocol/internal.h"
 #include <string.h>
 
 /**
@@ -73,9 +75,11 @@ int noise_signstate_new_by_id(NoiseSignState **state, int id)
     /* Create the SignState object for the "id" */
     *state = 0;
     switch (id) {
+#if NOISE_USE_ED25519
     case NOISE_SIGN_ED25519:
         *state = noise_ed25519_new();
         break;
+#endif
 
     default:
         return NOISE_ERROR_UNKNOWN_ID;
@@ -690,3 +694,5 @@ int noise_signstate_get_max_signature_length(void)
 }
 
 /**@}*/
+
+#endif  // NOISE_USE_SIGN

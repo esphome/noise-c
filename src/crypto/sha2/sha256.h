@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_SHA256
+
 #ifndef SHA256_h
 #define SHA256_h
 
@@ -48,3 +51,5 @@ void sha256_finish(sha256_context_t *context, uint8_t *hash);
 #endif
 
 #endif
+
+#endif  // NOISE_USE_REFERENCE_SHA256

@@ -21,12 +21,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 
-#if USE_SODIUM
+#if NOISE_USE_AES
+#if NOISE_USE_LIBSODIUM
 NoiseCipherState *noise_aesgcm_new_sodium(void);
 #endif
-#if USE_OPENSSL
+#if NOISE_USE_OPENSSL
 NoiseCipherState *noise_aesgcm_new_openssl(void);
 #else
 NoiseCipherState *noise_aesgcm_new_ref(void);
@@ -40,11 +41,11 @@ NoiseCipherState *noise_aesgcm_new_ref(void);
 NoiseCipherState *noise_aesgcm_new(void)
 {
     NoiseCipherState *state = 0;
-#if USE_SODIUM
+#if NOISE_USE_LIBSODIUM
     if (crypto_aead_aes256gcm_is_available())
         state = noise_aesgcm_new_sodium();
 #endif
-#if USE_OPENSSL
+#if NOISE_USE_OPENSSL
     if (!state)
         state = noise_aesgcm_new_openssl();
 #else
@@ -54,5 +55,6 @@ NoiseCipherState *noise_aesgcm_new(void)
 
     return state;
 }
+#endif  // NOISE_USE_AES
 
 

@@ -21,7 +21,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_LIBSODIUM
+
+#include "protocol/internal.h"
 #include <sodium.h>
 #include <string.h>
 
@@ -130,3 +133,5 @@ NoiseDHState *noise_curve25519_new(void)
 #else
 #include "crypto/donna/curve25519-donna.c"
 #endif
+
+#endif // NOISE_USE_LIBSODIUM

@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 #include <stdio.h>
 #include <string.h>
 

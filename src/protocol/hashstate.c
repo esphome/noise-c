@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 #include <string.h>
 
 /**
@@ -79,21 +79,29 @@ int noise_hashstate_new_by_id(NoiseHashState **state, int id)
     /* Create the HashState object for the "id" */
     *state = 0;
     switch (id) {
+#if NOISE_USE_BLAKE2S
     case NOISE_HASH_BLAKE2s:
         *state = noise_blake2s_new();
         break;
+#endif
 
+#if NOISE_USE_BLAKE2B
     case NOISE_HASH_BLAKE2b:
         *state = noise_blake2b_new();
         break;
+#endif
 
+#if NOISE_USE_SHA256
     case NOISE_HASH_SHA256:
         *state = noise_sha256_new();
         break;
+#endif
 
+#if NOISE_USE_SHA512
     case NOISE_HASH_SHA512:
         *state = noise_sha512_new();
         break;
+#endif
 
     default:
         return NOISE_ERROR_UNKNOWN_ID;

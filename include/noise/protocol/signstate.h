@@ -23,6 +23,9 @@
 #ifndef NOISE_SIGNSTATE_H
 #define NOISE_SIGNSTATE_H
 
+#include "noise/defines.h"
+#if NOISE_USE_SIGN
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -71,5 +74,7 @@ int noise_signstate_get_max_signature_length(void);
 #ifdef __cplusplus
 };
 #endif
+
+#endif  // NOISE_USE_SIGN
 
 #endif

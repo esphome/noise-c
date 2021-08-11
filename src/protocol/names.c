@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 #include <string.h>
 
 /**
@@ -55,19 +55,37 @@ typedef struct
 } NoiseIdMapping;
 static NoiseIdMapping const algorithm_names[] = {
     /* Cipher algorithsm */
+#if NOISE_USE_CHACHAPOLY
     {NOISE_CIPHER_CHACHAPOLY,   "ChaChaPoly",   10},
+#endif
+#if NOISE_USE_AES
     {NOISE_CIPHER_AESGCM,       "AESGCM",        6},
+#endif
 
     /* Hash algorithms */
+#if NOISE_USE_BLAKE2S
     {NOISE_HASH_BLAKE2s,        "BLAKE2s",       7},
+#endif
+#if NOISE_USE_BLAKE2B
     {NOISE_HASH_BLAKE2b,        "BLAKE2b",       7},
+#endif
+#if NOISE_USE_SHA256
     {NOISE_HASH_SHA256,         "SHA256",        6},
+#endif
+#if NOISE_USE_SHA512
     {NOISE_HASH_SHA512,         "SHA512",        6},
+#endif
 
     /* Diffie-Hellman algorithms */
+#if NOISE_USE_CURVE25519
     {NOISE_DH_CURVE25519,       "25519",         5},
+#endif
+#if NOISE_USE_CURVE448
     {NOISE_DH_CURVE448,         "448",           3},
+#endif
+#if NOISE_USE_NEWHOPE
     {NOISE_DH_NEWHOPE,          "NewHope",       7},
+#endif
 
     /* Handshake patterns */
     {NOISE_PATTERN_N,           "N",             1},
@@ -97,8 +115,10 @@ static NoiseIdMapping const algorithm_names[] = {
     /* Protocol name prefixes */
     {NOISE_PREFIX_STANDARD,     "Noise",         5},
 
+#if NOISE_USE_ED25519
     /* Signature algorithms */
     {NOISE_SIGN_ED25519,        "Ed25519",       7},
+#endif
 
     /* Terminator for the list */
     {0,                         0,               0}

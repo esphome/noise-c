@@ -23,6 +23,7 @@
 #ifndef NOISE_INTERNAL_H
 #define NOISE_INTERNAL_H
 
+#include "noise/defines.h"
 #include <noise/protocol.h>
 #if defined(__WIN32__) || defined(WIN32)
 #include <malloc.h>
@@ -361,6 +362,7 @@ struct NoiseDHState_s
     void (*destroy)(NoiseDHState *state);
 };
 
+#if NOISE_USE_SIGN
 /**
  * \brief Internal structure of the NoiseSignState type.
  */
@@ -498,6 +500,7 @@ struct NoiseSignState_s
      */
     void (*destroy)(NoiseSignState *state);
 };
+#endif  // NOISE_USE_SIGN
 
 /**
  * \brief Internal structure of the NoiseSymmetricState type.
@@ -677,7 +680,9 @@ NoiseDHState *noise_curve25519_new(void);
 NoiseDHState *noise_curve448_new(void);
 NoiseDHState *noise_newhope_new(void);
 
+#if NOISE_USE_ED25519
 NoiseSignState *noise_ed25519_new(void);
+#endif
 
 typedef uint16_t NoisePatternFlags_t;
 

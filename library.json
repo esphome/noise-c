@@ -1,0 +1,13 @@
+{
+    "name": "noise-c",
+    "version": "0.1",
+    "description": "noise-c",
+    "keywords": "noise-c",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/OttoWinter/noise-c.git"
+    },
+    "license": "MIT",
+    "includeDir": "include",
+    "srcDir": "src"
+}

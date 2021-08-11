@@ -20,6 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+
 #ifndef NOISE_CONSTANTS_H
 #define NOISE_CONSTANTS_H
 
@@ -34,23 +36,41 @@ extern "C" {
 /* AEAD cipher algorithms */
 #define NOISE_CIPHER_NONE               0
 #define NOISE_CIPHER_CATEGORY           NOISE_ID('C', 0)
+#if NOISE_USE_CHACHAPOLY
 #define NOISE_CIPHER_CHACHAPOLY         NOISE_ID('C', 1)
+#endif
+#if NOISE_USE_AES
 #define NOISE_CIPHER_AESGCM             NOISE_ID('C', 2)
+#endif
 
 /* Hash algorithms */
 #define NOISE_HASH_NONE                 0
 #define NOISE_HASH_CATEGORY             NOISE_ID('H', 0)
+#if NOISE_USE_BLAKE2S
 #define NOISE_HASH_BLAKE2s              NOISE_ID('H', 1)
+#endif
+#if NOISE_USE_BLAKE2B
 #define NOISE_HASH_BLAKE2b              NOISE_ID('H', 2)
+#endif
+#if NOISE_USE_SHA256
 #define NOISE_HASH_SHA256               NOISE_ID('H', 3)
+#endif
+#if NOISE_USE_SHA512
 #define NOISE_HASH_SHA512               NOISE_ID('H', 4)
+#endif
 
 /* Diffie-Hellman algorithms */
 #define NOISE_DH_NONE                   0
 #define NOISE_DH_CATEGORY               NOISE_ID('D', 0)
+#if NOISE_USE_CURVE25519
 #define NOISE_DH_CURVE25519             NOISE_ID('D', 1)
+#endif
+#if NOISE_USE_CURVE448
 #define NOISE_DH_CURVE448               NOISE_ID('D', 2)
+#endif
+#if NOISE_USE_NEWHOPE
 #define NOISE_DH_NEWHOPE                NOISE_ID('D', 3)
+#endif
 
 /* Handshake patterns */
 #define NOISE_PATTERN_NONE              0
@@ -86,10 +106,12 @@ extern "C" {
 #define NOISE_PREFIX_CATEGORY           NOISE_ID('N', 0)
 #define NOISE_PREFIX_STANDARD           NOISE_ID('N', 1)
 
+#if NOISE_USE_SIGN
 /* Signature algorithms */
 #define NOISE_SIGN_NONE                 0
 #define NOISE_SIGN_CATEGORY             NOISE_ID('S', 0)
 #define NOISE_SIGN_ED25519              NOISE_ID('S', 1)
+#endif
 
 /* Role for this end of the communications */
 #define NOISE_ROLE_INITIATOR            NOISE_ID('R', 1)

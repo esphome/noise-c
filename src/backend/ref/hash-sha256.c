@@ -20,7 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BACKEND && NOISE_USE_REFERENCE_SHA256
+
+#include "protocol/internal.h"
 #include "crypto/sha2/sha256.h"
 
 typedef struct
@@ -61,3 +64,5 @@ NoiseHashState *noise_sha256_new(void)
     state->parent.finalize = noise_sha256_finalize;
     return &(state->parent);
 }
+
+#endif  // NOISE_USE_REFERENCE_BACKEND

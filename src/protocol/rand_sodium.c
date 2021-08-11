@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#if USE_LIBSODIUM
+#if NOISE_USE_LIBSODIUM
 #include <sodium.h>
 
 /**
@@ -45,4 +45,4 @@ void noise_rand_bytes(void *bytes, size_t size)
 }
 
 
-#endif
+#endif  // NOISE_USE_LIBSODIUM

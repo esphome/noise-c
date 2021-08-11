@@ -4,6 +4,9 @@
 	based on the public domain reference version in supercop by djb
 */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_POLY1305
+
 #if defined(_MSC_VER)
 	#define POLY1305_NOINLINE __declspec(noinline)
 #elif defined(__GNUC__)
@@ -184,3 +187,5 @@ poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
 	for (i = 0; i < 17; i++)
 		st->pad[i] = 0;
 }
+
+#endif  // NOISE_USE_REFERENCE_POLY1305

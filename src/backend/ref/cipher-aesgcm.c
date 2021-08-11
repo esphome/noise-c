@@ -20,7 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BACKEND && NOISE_USE_REFERENCE_AES
+
+#include "protocol/internal.h"
 #include "crypto/aes/rijndael-alg-fst.h"
 #include "crypto/ghash/ghash.h"
 #include <string.h>
@@ -201,3 +204,6 @@ NoiseCipherState *noise_aesgcm_new_ref(void)
     state->parent.decrypt = noise_aesgcm_decrypt;
     return &(state->parent);
 }
+
+
+#endif  // NOISE_USE_REFERENCE_BACKEND

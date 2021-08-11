@@ -23,6 +23,10 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_AES
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -1398,3 +1402,5 @@ void rijndaelDecryptRound(const u32 rk[/*4*(Nr + 1)*/], int Nr, u8 block[16], in
 }
 
 #endif /* INTERMEDIATE_VALUE_KAT */
+
+#endif  // NOISE_USE_REFERENCE_AES

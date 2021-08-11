@@ -2,6 +2,9 @@
 	poly1305 implementation using 64 bit * 64 bit = 128 bit multiplication and 128 bit addition
 */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_POLY1305
+
 #if defined(_MSC_VER)
 	#include <intrin.h>
 
@@ -222,3 +225,4 @@ poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
 	st->pad[1] = 0;
 }
 
+#endif  // NOISE_USE_REFERENCE_POLY1305

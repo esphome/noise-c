@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_SHA512
+
 #include "sha512.h"
 #include <string.h>
 
@@ -204,3 +207,5 @@ void sha512_hash(uint8_t *hash, const void *data, size_t size)
     sha512_update(&context, data, size);
     sha512_finish(&context, hash);
 }
+
+#endif  // NOISE_USE_REFERENCE_SHA512

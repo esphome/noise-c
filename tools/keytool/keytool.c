@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (noise_init() != NOISE_ERROR_NONE) {
+    if (noise_init_framework() != NOISE_ERROR_NONE) {
         fprintf(stderr, "Noise initialization failed\n");
         return 1;
     }

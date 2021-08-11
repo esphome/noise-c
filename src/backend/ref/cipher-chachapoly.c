@@ -20,7 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BACKEND && NOISE_USE_REFERENCE_CHACHA && NOISE_USE_REFERENCE_POLY1305
+
+#include "protocol/internal.h"
 #include "crypto/chacha/chacha.h"
 #include "crypto/donna/poly1305-donna.h"
 #include <string.h>
@@ -156,3 +159,5 @@ NoiseCipherState *noise_chachapoly_new(void)
     state->parent.decrypt = noise_chachapoly_decrypt;
     return &(state->parent);
 }
+
+#endif  // NOISE_USE_REFERENCE_BACKEND

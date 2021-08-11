@@ -1,3 +1,7 @@
+#pragma once
+
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_CHACHA
 
 #ifndef CHACHA_H
 #define CHACHA_H
@@ -31,3 +35,5 @@ extern void chacha_ivsetup(chacha_ctx *x,const uint8_t *iv,const uint8_t *counte
 extern void chacha_encrypt_bytes(chacha_ctx *x,const uint8_t *m,uint8_t *c,uint32_t bytes);
 
 #endif
+
+#endif  // NOISE_USE_REFERENCE_CHACHA

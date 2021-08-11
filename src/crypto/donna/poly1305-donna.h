@@ -1,3 +1,6 @@
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_POLY1305
+
 #ifndef POLY1305_DONNA_H
 #define POLY1305_DONNA_H
 
@@ -18,3 +21,4 @@ int poly1305_power_on_self_test(void);
 
 #endif /* POLY1305_DONNA_H */
 
+#endif  // NOISE_USE_REFERENCE_POLY1305

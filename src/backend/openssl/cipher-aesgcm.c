@@ -21,7 +21,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_OPENSSL
+
+#include "protocol/internal.h"
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -202,3 +205,5 @@ NoiseCipherState *noise_aesgcm_new_openssl(void)
     state->parent.decrypt = noise_aesgcm_decrypt;
     return &(state->parent);
 }
+
+#endif  // NOISE_USE_OPENSSL

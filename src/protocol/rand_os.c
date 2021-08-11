@@ -24,7 +24,8 @@
    here is very platform and OS dependent and will probably need work to
    port it to new platforms. */
 
-#include "internal.h"
+#include "protocol/internal.h"
+#include "noise/defines.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +56,7 @@
 #define RANDOM_WIN32    1
 #endif
 
+#if !NOISE_USE_CUSTOM_RAND
 /**
  * \brief Gets cryptographically-strong random bytes from the operating system.
  *
@@ -65,8 +67,7 @@
  *
  * \note Not part of the public API.
  */
-void noise_rand_bytes(void *bytes, size_t size)
-{
+void noise_rand_bytes(void *bytes, size_t size) {
 #if defined(RANDOM_DEVICE)
     int fd = open(RANDOM_DEVICE, O_RDONLY);
     if (fd >= 0) {
@@ -103,6 +104,7 @@ void noise_rand_bytes(void *bytes, size_t size)
     fprintf(stderr, "Do not know how to generate random numbers!  Abort!\n");
     exit(1);
 }
+#endif  // !NOISE_USE_CUSTOM_RAND
 
 #ifdef ED25519_CUSTOMRANDOM
 

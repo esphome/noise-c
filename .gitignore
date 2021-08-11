@@ -17,3 +17,6 @@ missing
 test-driver
 .dirstamp
 ylwrap
+
+.vscode/
+!.vscode/tasks.json

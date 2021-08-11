@@ -20,7 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BACKEND && NOISE_USE_REFERENCE_BLAKE2B
+
+#include "protocol/internal.h"
 #include "crypto/blake2/blake2b.h"
 
 typedef struct
@@ -61,3 +64,5 @@ NoiseHashState *noise_blake2b_new(void)
     state->parent.finalize = noise_blake2b_finalize;
     return &(state->parent);
 }
+
+#endif  // NOISE_USE_REFERENCE_BACKEND

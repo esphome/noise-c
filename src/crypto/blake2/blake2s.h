@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BLAKE2S
+
 #ifndef BLAKE2s_H
 #define BLAKE2s_H
 
@@ -63,3 +66,5 @@ void BLAKE2s_finish(BLAKE2s_context_t *context, uint8_t *hash);
 #endif
 
 #endif
+
+#endif  // NOISE_USE_REFERENCE_BLAKE2

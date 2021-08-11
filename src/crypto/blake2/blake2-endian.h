@@ -20,6 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BLAKE2S || NOISE_USE_REFERENCE_BLAKE2B
+
 #ifndef __BLAKE2_ENDIAN_H__
 #define __BLAKE2_ENDIAN_H__
 
@@ -53,3 +56,5 @@
 #endif
 
 #endif
+
+#endif  // NOISE_USE_REFERENCE_BLAKE2

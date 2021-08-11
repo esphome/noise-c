@@ -1,3 +1,6 @@
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_POLY1305
+
 #include "poly1305-donna.h"
 
 #if defined(POLY1305_8BIT)
@@ -199,3 +202,5 @@ poly1305_power_on_self_test(void) {
 
 	return result;
 }
+
+#endif // NOISE_USE_REFERENCE_POLY1305

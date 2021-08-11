@@ -2,6 +2,9 @@
 	poly1305 implementation using 32 bit * 32 bit = 64 bit multiplication and 64 bit addition
 */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_POLY1305
+
 #if defined(_MSC_VER)
 	#define POLY1305_NOINLINE __declspec(noinline)
 #elif defined(__GNUC__)
@@ -217,3 +220,4 @@ poly1305_finish(poly1305_context *ctx, unsigned char mac[16]) {
 	st->pad[3] = 0;
 }
 
+#endif  // NOISE_USE_REFERENCE_POLY1305

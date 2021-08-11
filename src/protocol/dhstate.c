@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "internal.h"
+#include "protocol/internal.h"
 #include <string.h>
 
 /**
@@ -73,17 +73,23 @@ int noise_dhstate_new_by_id(NoiseDHState **state, int id)
     /* Create the DHState object for the "id" */
     *state = 0;
     switch (id) {
+#if NOISE_USE_CURVE25519
     case NOISE_DH_CURVE25519:
         *state = noise_curve25519_new();
         break;
+#endif
 
+#if NOISE_USE_CURVE448
     case NOISE_DH_CURVE448:
         *state = noise_curve448_new();
         break;
+#endif
 
+#if NOISE_USE_NEWHOPE
     case NOISE_DH_NEWHOPE:
         *state = noise_newhope_new();
         break;
+#endif
 
     default:
         return NOISE_ERROR_UNKNOWN_ID;

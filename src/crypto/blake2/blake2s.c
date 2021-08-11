@@ -27,6 +27,9 @@
     https://github.com/rweather/arduinolibs
 */
 
+#include "noise/defines.h"
+#if NOISE_USE_REFERENCE_BLAKE2S
+
 #include "blake2s.h"
 #include "blake2-endian.h"
 #include <string.h>
@@ -264,3 +267,5 @@ void BLAKE2s_finish(BLAKE2s_context_t *context, uint8_t *hash)
     }
 #endif
 }
+
+#endif  // NOISE_USE_REFERENCE_BLAKE2S
