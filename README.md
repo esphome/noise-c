@@ -2,6 +2,8 @@
 Noise-C Library
 ===============
 
+**Note**: This is a port of the [noise-c](https://github.com/rweather/noise-c) library to support 1. PlatformIO build system and 2. ESP8266/ESP32 targets.
+
 Noise-C is a plain C implementation of the
 [Noise Protocol](http://noiseprotocol.org), intended as a
 reference implementation.  It can also be referred to as "Noisy",
