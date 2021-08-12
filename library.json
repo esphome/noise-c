@@ -8,6 +8,12 @@
         "url": "https://github.com/esphome/noise-c.git"
     },
     "license": "MIT",
-    "includeDir": "include",
-    "srcDir": "src"
+    "include": [
+        "include/*",
+        "src/*"
+    ],
+    "build": {
+        "includeDir": "include",
+        "srcDir": "src"
+    }
 }

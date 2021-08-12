@@ -246,15 +246,6 @@ int noise_symmetricstate_get_protocol_id
     return NOISE_ERROR_NONE;
 }
 
-void hexencode(const uint8_t *input, size_t len, char *buffer) {
-    size_t at = 0;
-    for (size_t i = 0; i < len; i++) {
-        sprintf(buffer + at, "%02X.", input[i]);
-        at += 3;
-    }
-    buffer[at] = '\0';
-}
-
 /**
  * \brief Mixes new input data into the chaining key.
  *
