@@ -262,8 +262,6 @@ int noise_symmetricstate_get_protocol_id
 int noise_symmetricstate_mix_key
     (NoiseSymmetricState *state, const uint8_t *input, size_t size)
 {
-    char buffer[512];
-    hexencode(input, size, buffer);
     uint8_t temp_k[NOISE_MAX_HASHLEN];
     size_t hash_len;
     size_t key_len;
@@ -309,8 +307,6 @@ int noise_symmetricstate_mix_key
 int noise_symmetricstate_mix_hash
     (NoiseSymmetricState *state, const uint8_t *input, size_t size)
 {
-    char buffer[512];
-    hexencode(input, size, buffer);
     size_t hash_len;
 
     /* Validate the parameters */
@@ -344,8 +340,6 @@ int noise_symmetricstate_mix_hash
 int noise_symmetricstate_mix_key_and_hash
     (NoiseSymmetricState *state, const uint8_t *input, size_t size)
 {
-    char buffer[512];
-    hexencode(input, size, buffer);
     uint8_t temp_h[NOISE_MAX_HASHLEN];
     uint8_t temp_k[NOISE_MAX_HASHLEN];
     size_t hash_len;
