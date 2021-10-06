@@ -15,5 +15,12 @@
     "build": {
         "includeDir": "include",
         "srcDir": "src"
-    }
+    },
+    "dependencies": [
+        {
+            "owner": "esphome",
+            "name": "libsodium",
+            "version": "1.10018.0"
+        }
+    ]
 }

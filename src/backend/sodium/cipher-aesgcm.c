@@ -22,7 +22,7 @@
  */
 
 #include "noise/defines.h"
-#if NOISE_USE_LIBSODIUM
+#if NOISE_USE_LIBSODIUM && NOISE_USE_AES
 #include "protocol/internal.h"
 #include <sodium.h>
 #include <string.h>

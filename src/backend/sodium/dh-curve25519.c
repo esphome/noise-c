@@ -28,13 +28,6 @@
 #include <sodium.h>
 #include <string.h>
 
-/* We use ed25519's faster curved25519_scalarmult_basepoint() function
-   when deriving a public key from a private key.  Unfortunately ed25519
-   doesn't have an equivalent function for general curve25519 calculations
-   so we fall back to the curve25519-donna implementation for that. */
-
-int curve25519_donna(uint8_t *mypublic, const uint8_t *secret, const uint8_t *basepoint);
-
 typedef struct
 {
     struct NoiseDHState_s parent;
@@ -101,8 +94,10 @@ static int noise_curve25519_calculate
      uint8_t *shared_key)
 {
     /* Do we need to check that the public key is less than 2^255 - 19? */
-    curve25519_donna(shared_key, private_key_state->private_key,
-                     public_key_state->public_key);
+    crypto_scalarmult_curve25519(
+        shared_key, private_key_state->private_key,
+        public_key_state->public_key
+    );
     return NOISE_ERROR_NONE;
 }
 
@@ -126,12 +121,5 @@ NoiseDHState *noise_curve25519_new(void)
     state->parent.calculate = noise_curve25519_calculate;
     return &(state->parent);
 }
-
-/* Choose the version of curve25519-donna based on the word size */
-#if __WORDSIZE == 64 && defined(__GNUC__)
-#include "crypto/donna/curve25519-donna-c64.c"
-#else
-#include "crypto/donna/curve25519-donna.c"
-#endif
 
 #endif // NOISE_USE_LIBSODIUM
