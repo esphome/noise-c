@@ -93,11 +93,15 @@ static int noise_curve25519_calculate
      const NoiseDHState *public_key_state,
      uint8_t *shared_key)
 {
-    /* Do we need to check that the public key is less than 2^255 - 19? */
-    crypto_scalarmult_curve25519(
+    int ret = crypto_scalarmult_curve25519(
         shared_key, private_key_state->private_key,
         public_key_state->public_key
     );
+    if (ret != 0) {
+        // return value is always 0; return value only used
+        // to ensure constant timing
+        return NOISE_ERROR_INVALID_PARAM;
+    }
     return NOISE_ERROR_NONE;
 }
 
