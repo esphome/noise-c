@@ -20,3 +20,4 @@ ylwrap
 
 .vscode/
 !.vscode/tasks.json
+/dist/
