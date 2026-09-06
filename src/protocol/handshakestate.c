@@ -502,6 +502,69 @@ NoiseDHState *noise_handshakestate_get_fixed_ephemeral_dh
 }
 
 /**
+ * \brief Supplies a pre-generated ephemeral key pair for this handshake.
+ *
+ * \param state The HandshakeState object.
+ * \param private_key Points to the private key.
+ * \param private_key_len Length of the private key in bytes.
+ * \param public_key Points to the public key.
+ * \param public_key_len Length of the public key in bytes.
+ *
+ * \return NOISE_ERROR_NONE on success.
+ * \return NOISE_ERROR_INVALID_PARAM if \a state, \a private_key or
+ * \a public_key is NULL.
+ * \return NOISE_ERROR_INVALID_STATE if the handshake has already started,
+ * if the pattern has no local ephemeral key, or if the local ephemeral key
+ * is already set: by an earlier call, or because the key was sent in a
+ * previous message and kept across noise_handshakestate_fallback().
+ * \return NOISE_ERROR_NOT_APPLICABLE if the algorithm derives its
+ * ephemeral key from the remote party's, as New Hope does.
+ * \return NOISE_ERROR_INVALID_LENGTH if a key length is wrong for the
+ * algorithm.
+ *
+ * Generating the ephemeral key pair is the most expensive step of a
+ * handshake on small devices.  This function lets the application generate
+ * it ahead of time, off the latency critical path, and hand it to the
+ * handshake instead of having noise_handshakestate_write_message()
+ * generate it.  The key pair is copied as is and is not verified: a
+ * private key that does not match the public key makes the handshake fail
+ * later with NOISE_ERROR_MAC_FAILURE rather than here.  The key pair must
+ * come from the application's own generator and must never be supplied to
+ * more than one handshake; the application should noise_clean() its own
+ * copy once this function returns.
+ *
+ * A fixed ephemeral key installed with
+ * noise_handshakestate_get_fixed_ephemeral_dh() takes precedence over a
+ * key pair supplied here; that hook exists for test vectors only.
+ *
+ * \sa noise_handshakestate_get_fixed_ephemeral_dh()
+ */
+int noise_handshakestate_set_local_ephemeral
+    (NoiseHandshakeState *state, const uint8_t *private_key,
+     size_t private_key_len, const uint8_t *public_key, size_t public_key_len)
+{
+    NoiseDHState *dh;
+    int err;
+
+    /* Validate the parameters */
+    if (!state || !private_key || !public_key)
+        return NOISE_ERROR_INVALID_PARAM;
+    dh = state->dh_local_ephemeral;
+    if (!dh || state->action != NOISE_ACTION_NONE)
+        return NOISE_ERROR_INVALID_STATE;
+    if (dh->key_type != NOISE_KEY_TYPE_NO_KEY)
+        return NOISE_ERROR_INVALID_STATE;
+
+    /* Copy the key pair into the ephemeral DHState */
+    err = noise_dhstate_set_keypair_unchecked
+        (dh, private_key, private_key_len, public_key, public_key_len);
+    if (err != NOISE_ERROR_NONE)
+        return err;
+    state->local_ephemeral_supplied = 1;
+    return NOISE_ERROR_NONE;
+}
+
+/**
  * \brief Gets the DHState object that contains the local additional
  * hybrid secrecy keypair.
  *
@@ -1084,6 +1147,9 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
     /* Start a new token pattern for the fallback */
     memcpy(state->pattern, tokens, NOISE_MAX_TOKENS);
     state->tokens = state->pattern + 2;
+    /* No supplied key is pending any more: it was sent, cleared above, or
+       is abandoned with the failed attempt this fallback leaves behind */
+    state->local_ephemeral_supplied = 0;
     state->action = NOISE_ACTION_NONE;
 
     /* Set up the key requirements for the fallback */
@@ -1222,12 +1288,17 @@ static int noise_handshakestate_write
         case NOISE_TOKEN_E:
             /* Generate a local ephemeral keypair and add the public
                key to the message.  If we are running fixed vector tests,
-               then the ephemeral key may have already been provided. */
+               then the ephemeral key may have already been provided, and
+               the application may have supplied one ahead of time with
+               noise_handshakestate_set_local_ephemeral(). */
             if (!state->dh_local_ephemeral)
                 return NOISE_ERROR_INVALID_STATE;
             if (!state->dh_fixed_ephemeral) {
-                err = noise_dhstate_generate_dependent_keypair
-                    (state->dh_local_ephemeral, state->dh_remote_ephemeral);
+                if (!state->local_ephemeral_supplied) {
+                    err = noise_dhstate_generate_dependent_keypair
+                        (state->dh_local_ephemeral,
+                         state->dh_remote_ephemeral);
+                }
             } else {
                 /* Use the fixed ephemeral key provided by the test harness.
                    To support New Hope we need to perform a dependent copy */
@@ -1243,6 +1314,8 @@ static int noise_handshakestate_write
             if (rest.max_size < len)
                 return NOISE_ERROR_INVALID_LENGTH;
             memcpy(rest.data, state->dh_local_ephemeral->public_key, len);
+            /* The key, supplied or fixed, is on the wire now */
+            state->local_ephemeral_supplied = 0;
             noise_symmetricstate_mix_hash(state->symmetric, rest.data, len);
             if (state->requirements & NOISE_REQ_PSK) {
                 noise_symmetricstate_mix_key(state->symmetric, rest.data, len);

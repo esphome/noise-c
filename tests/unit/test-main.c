@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     test(dhstate);
     test(errors);
     test(handshakestate);
+    test(handshakestate_preset_ephemeral);
     test(hashstate);
     test(names);
     test(patterns);
