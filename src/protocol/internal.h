@@ -701,12 +701,12 @@ int noise_pattern_expand
     (uint8_t pattern[NOISE_MAX_TOKENS], int pattern_id,
      const int *modifiers, size_t num_modifiers);
 
-#ifdef __cplusplus
-};
-#endif
-
 int noise_dhstate_set_keypair_unchecked
     (NoiseDHState *state, const uint8_t *private_key, size_t private_key_len,
      const uint8_t *public_key, size_t public_key_len);
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif
