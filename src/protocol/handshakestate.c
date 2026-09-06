@@ -1297,7 +1297,6 @@ static int noise_handshakestate_write
                         (state->dh_local_ephemeral,
                          state->dh_remote_ephemeral);
                 }
-                state->local_ephemeral_supplied = 0;
             } else {
                 /* Use the fixed ephemeral key provided by the test harness.
                    To support New Hope we need to perform a dependent copy */
@@ -1307,6 +1306,8 @@ static int noise_handshakestate_write
                     (state->dh_local_ephemeral, state->dh_fixed_ephemeral,
                      state->dh_remote_ephemeral);
             }
+            /* Whichever source was used, the supplied key is consumed */
+            state->local_ephemeral_supplied = 0;
             if (err != NOISE_ERROR_NONE)
                 break;
             len = state->dh_local_ephemeral->public_key_len;
