@@ -690,10 +690,11 @@ static void handshakestate_check_errors(void)
 
 /* Check that a key pair supplied ahead of time is used as the local
    ephemeral key and that the handshake still completes */
-static void handshakestate_check_preset_ephemeral(void)
+void test_handshakestate_preset_ephemeral(void)
 {
     NoiseHandshakeState *initiator;
     NoiseHandshakeState *responder;
+    NoiseHandshakeState *one_way;
     NoiseDHState *dh;
     uint8_t private_key[32];
     uint8_t public_key[32];
@@ -728,6 +729,15 @@ static void handshakestate_check_preset_ephemeral(void)
     compare(noise_handshakestate_set_local_ephemeral
                 (initiator, private_key, 32, public_key, 33),
             NOISE_ERROR_INVALID_LENGTH);
+
+    /* A pattern with no local ephemeral refuses the key pair */
+    compare(noise_handshakestate_new_by_name
+                (&one_way, "Noise_N_25519_ChaChaPoly_SHA256",
+                 NOISE_ROLE_RESPONDER), NOISE_ERROR_NONE);
+    compare(noise_handshakestate_set_local_ephemeral
+                (one_way, private_key, 32, public_key, 32),
+            NOISE_ERROR_INVALID_STATE);
+    noise_handshakestate_free(one_way);
 
     /* Algorithms whose ephemeral key depends on the remote party's
        (New Hope) cannot take a preset key pair; simulate one */
@@ -780,9 +790,6 @@ static void handshakestate_check_preset_ephemeral(void)
 
 void test_handshakestate(void)
 {
-    /* First: the checks below stop at the first algorithm this build
-       leaves out, and this one only needs Curve25519 */
-    handshakestate_check_preset_ephemeral();
     handshakestate_derive_keys();
     handshakestate_check_protocols();
     handshakestate_check_fallback();

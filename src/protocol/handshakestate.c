@@ -1138,7 +1138,6 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
         state->role = NOISE_ROLE_RESPONDER;
     } else {
         noise_dhstate_clear_key(state->dh_local_ephemeral);
-        state->local_ephemeral_supplied = 0;
         noise_dhstate_clear_key(state->dh_local_hybrid);
         if (!(flags & NOISE_PAT_FLAG_REMOTE_REQUIRED))
             noise_dhstate_clear_key(state->dh_remote_static);
@@ -1148,6 +1147,9 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
     /* Start a new token pattern for the fallback */
     memcpy(state->pattern, tokens, NOISE_MAX_TOKENS);
     state->tokens = state->pattern + 2;
+    /* The ephemeral either went out already or was just cleared; either
+       way no supplied key is pending any more */
+    state->local_ephemeral_supplied = 0;
     state->action = NOISE_ACTION_NONE;
 
     /* Set up the key requirements for the fallback */
