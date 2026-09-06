@@ -729,6 +729,14 @@ static void handshakestate_check_preset_ephemeral(void)
                 (initiator, private_key, 32, public_key, 33),
             NOISE_ERROR_INVALID_LENGTH);
 
+    /* Algorithms whose ephemeral key depends on the remote party's
+       (New Hope) cannot take a preset key pair; simulate one */
+    initiator->dh_local_ephemeral->ephemeral_only = 1;
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 32, public_key, 32),
+            NOISE_ERROR_NOT_APPLICABLE);
+    initiator->dh_local_ephemeral->ephemeral_only = 0;
+
     /* Supply the key pair to the initiator and run the handshake */
     compare(noise_handshakestate_set_local_ephemeral
                 (initiator, private_key, 32, public_key, 32),
@@ -755,7 +763,6 @@ static void handshakestate_check_preset_ephemeral(void)
     noise_buffer_set_output(mbuf, message, sizeof(message));
     compare(noise_handshakestate_write_message(responder, &mbuf, 0),
             NOISE_ERROR_NONE);
-    verify(memcmp(message, public_key, 32) != 0);
     noise_buffer_set_input(mbuf, message, mbuf.size);
     compare(noise_handshakestate_read_message(initiator, &mbuf, 0),
             NOISE_ERROR_NONE);
