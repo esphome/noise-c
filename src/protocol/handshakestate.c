@@ -533,6 +533,10 @@ NoiseDHState *noise_handshakestate_get_fixed_ephemeral_dh
  * more than one handshake; the application should noise_clean() its own
  * copy once this function returns.
  *
+ * A fixed ephemeral key installed with
+ * noise_handshakestate_get_fixed_ephemeral_dh() takes precedence over a
+ * key pair supplied here; that hook exists for test vectors only.
+ *
  * \sa noise_handshakestate_get_fixed_ephemeral_dh()
  */
 int noise_handshakestate_set_local_ephemeral
