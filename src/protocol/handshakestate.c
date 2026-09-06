@@ -1306,14 +1306,14 @@ static int noise_handshakestate_write
                     (state->dh_local_ephemeral, state->dh_fixed_ephemeral,
                      state->dh_remote_ephemeral);
             }
-            /* Whichever source was used, the supplied key is consumed */
-            state->local_ephemeral_supplied = 0;
             if (err != NOISE_ERROR_NONE)
                 break;
             len = state->dh_local_ephemeral->public_key_len;
             if (rest.max_size < len)
                 return NOISE_ERROR_INVALID_LENGTH;
             memcpy(rest.data, state->dh_local_ephemeral->public_key, len);
+            /* The key, supplied or fixed, is on the wire now */
+            state->local_ephemeral_supplied = 0;
             noise_symmetricstate_mix_hash(state->symmetric, rest.data, len);
             if (state->requirements & NOISE_REQ_PSK) {
                 noise_symmetricstate_mix_key(state->symmetric, rest.data, len);
