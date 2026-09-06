@@ -432,7 +432,7 @@ static void handshakestate_check_protocols(void)
     check_handshake_protocol("Noise_K_25519_AESGCM_SHA256");
     check_handshake_protocol("Noise_X_448_AESGCM_SHA512");
 
-    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_BLAKE2s");
+    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_SHA256");
     check_handshake_protocol("Noise_NK_448_ChaChaPoly_BLAKE2b");
     check_handshake_protocol("Noise_NX_25519_AESGCM_BLAKE2b");
 
@@ -688,10 +688,89 @@ static void handshakestate_check_errors(void)
     verify(state == NULL);
 }
 
+/* Check that a key pair supplied ahead of time is used as the local
+   ephemeral key and that the handshake still completes */
+static void handshakestate_check_preset_ephemeral(void)
+{
+    NoiseHandshakeState *initiator;
+    NoiseHandshakeState *responder;
+    NoiseDHState *dh;
+    uint8_t private_key[32];
+    uint8_t public_key[32];
+    uint8_t message[256];
+    NoiseBuffer mbuf;
+
+    compare(noise_handshakestate_new_by_name
+                (&initiator, "Noise_NN_25519_ChaChaPoly_SHA256",
+                 NOISE_ROLE_INITIATOR), NOISE_ERROR_NONE);
+    compare(noise_handshakestate_new_by_name
+                (&responder, "Noise_NN_25519_ChaChaPoly_SHA256",
+                 NOISE_ROLE_RESPONDER), NOISE_ERROR_NONE);
+
+    /* Generate a key pair the way an application would */
+    compare(noise_dhstate_new_by_id(&dh, NOISE_DH_CURVE25519), NOISE_ERROR_NONE);
+    compare(noise_dhstate_generate_keypair(dh), NOISE_ERROR_NONE);
+    compare(noise_dhstate_get_keypair
+                (dh, private_key, sizeof(private_key),
+                 public_key, sizeof(public_key)), NOISE_ERROR_NONE);
+    noise_dhstate_free(dh);
+
+    /* Parameter checks */
+    compare(noise_handshakestate_set_local_ephemeral
+                (0, private_key, 32, public_key, 32),
+            NOISE_ERROR_INVALID_PARAM);
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, 0, 32, public_key, 32),
+            NOISE_ERROR_INVALID_PARAM);
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 31, public_key, 32),
+            NOISE_ERROR_INVALID_LENGTH);
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 32, public_key, 33),
+            NOISE_ERROR_INVALID_LENGTH);
+
+    /* Supply the key pair to the initiator and run the handshake */
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 32, public_key, 32),
+            NOISE_ERROR_NONE);
+    compare(noise_handshakestate_start(initiator), NOISE_ERROR_NONE);
+    compare(noise_handshakestate_start(responder), NOISE_ERROR_NONE);
+
+    /* Too late once the handshake has started */
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 32, public_key, 32),
+            NOISE_ERROR_INVALID_STATE);
+
+    /* The first message must carry the supplied public key */
+    noise_buffer_set_output(mbuf, message, sizeof(message));
+    compare(noise_handshakestate_write_message(initiator, &mbuf, 0),
+            NOISE_ERROR_NONE);
+    verify(mbuf.size >= 32);
+    verify(!memcmp(message, public_key, 32));
+
+    /* The responder generates its own key and the handshake completes */
+    noise_buffer_set_input(mbuf, message, mbuf.size);
+    compare(noise_handshakestate_read_message(responder, &mbuf, 0),
+            NOISE_ERROR_NONE);
+    noise_buffer_set_output(mbuf, message, sizeof(message));
+    compare(noise_handshakestate_write_message(responder, &mbuf, 0),
+            NOISE_ERROR_NONE);
+    verify(memcmp(message, public_key, 32) != 0);
+    noise_buffer_set_input(mbuf, message, mbuf.size);
+    compare(noise_handshakestate_read_message(initiator, &mbuf, 0),
+            NOISE_ERROR_NONE);
+    compare(noise_handshakestate_get_action(initiator), NOISE_ACTION_SPLIT);
+    compare(noise_handshakestate_get_action(responder), NOISE_ACTION_SPLIT);
+
+    noise_handshakestate_free(initiator);
+    noise_handshakestate_free(responder);
+}
+
 void test_handshakestate(void)
 {
     handshakestate_derive_keys();
     handshakestate_check_protocols();
     handshakestate_check_fallback();
+    handshakestate_check_preset_ephemeral();
     handshakestate_check_errors();
 }
