@@ -513,8 +513,10 @@ NoiseDHState *noise_handshakestate_get_fixed_ephemeral_dh
  * \return NOISE_ERROR_NONE on success.
  * \return NOISE_ERROR_INVALID_PARAM if \a state, \a private_key or
  * \a public_key is NULL.
- * \return NOISE_ERROR_INVALID_STATE if the handshake has already started
- * or the pattern has no local ephemeral key.
+ * \return NOISE_ERROR_INVALID_STATE if the handshake has already started,
+ * if the pattern has no local ephemeral key, or if the local ephemeral key
+ * is already set: by an earlier call, or because the key was sent in a
+ * previous message and kept across noise_handshakestate_fallback().
  * \return NOISE_ERROR_NOT_APPLICABLE if the algorithm derives its
  * ephemeral key from the remote party's, as New Hope does.
  * \return NOISE_ERROR_INVALID_LENGTH if a key length is wrong for the
@@ -524,9 +526,12 @@ NoiseDHState *noise_handshakestate_get_fixed_ephemeral_dh
  * handshake on small devices.  This function lets the application generate
  * it ahead of time, off the latency critical path, and hand it to the
  * handshake instead of having noise_handshakestate_write_message()
- * generate it.  The key pair is copied as is and is not verified, so it
- * must come from the application's own generator and must never be
- * supplied to more than one handshake.
+ * generate it.  The key pair is copied as is and is not verified: a
+ * private key that does not match the public key makes the handshake fail
+ * later with NOISE_ERROR_MAC_FAILURE rather than here.  The key pair must
+ * come from the application's own generator and must never be supplied to
+ * more than one handshake; the application should noise_clean() its own
+ * copy once this function returns.
  *
  * \sa noise_handshakestate_get_fixed_ephemeral_dh()
  */
@@ -535,6 +540,7 @@ int noise_handshakestate_set_local_ephemeral
      size_t private_key_len, const uint8_t *public_key, size_t public_key_len)
 {
     NoiseDHState *dh;
+    int err;
 
     /* Validate the parameters */
     if (!state || !private_key || !public_key)
@@ -542,16 +548,15 @@ int noise_handshakestate_set_local_ephemeral
     dh = state->dh_local_ephemeral;
     if (!dh || state->action != NOISE_ACTION_NONE)
         return NOISE_ERROR_INVALID_STATE;
-    if (dh->ephemeral_only)
-        return NOISE_ERROR_NOT_APPLICABLE;
-    if (private_key_len != dh->private_key_len ||
-            public_key_len != dh->public_key_len)
-        return NOISE_ERROR_INVALID_LENGTH;
+    if (dh->key_type != NOISE_KEY_TYPE_NO_KEY)
+        return NOISE_ERROR_INVALID_STATE;
 
     /* Copy the key pair into the ephemeral DHState */
-    memcpy(dh->private_key, private_key, private_key_len);
-    memcpy(dh->public_key, public_key, public_key_len);
-    dh->key_type = NOISE_KEY_TYPE_KEYPAIR;
+    err = noise_dhstate_set_keypair_unchecked
+        (dh, private_key, private_key_len, public_key, public_key_len);
+    if (err != NOISE_ERROR_NONE)
+        return err;
+    state->local_ephemeral_supplied = 1;
     return NOISE_ERROR_NONE;
 }
 
@@ -1129,6 +1134,7 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
         state->role = NOISE_ROLE_RESPONDER;
     } else {
         noise_dhstate_clear_key(state->dh_local_ephemeral);
+        state->local_ephemeral_supplied = 0;
         noise_dhstate_clear_key(state->dh_local_hybrid);
         if (!(flags & NOISE_PAT_FLAG_REMOTE_REQUIRED))
             noise_dhstate_clear_key(state->dh_remote_static);
@@ -1282,12 +1288,12 @@ static int noise_handshakestate_write
             if (!state->dh_local_ephemeral)
                 return NOISE_ERROR_INVALID_STATE;
             if (!state->dh_fixed_ephemeral) {
-                if (state->dh_local_ephemeral->key_type !=
-                        NOISE_KEY_TYPE_KEYPAIR) {
+                if (!state->local_ephemeral_supplied) {
                     err = noise_dhstate_generate_dependent_keypair
                         (state->dh_local_ephemeral,
                          state->dh_remote_ephemeral);
                 }
+                state->local_ephemeral_supplied = 0;
             } else {
                 /* Use the fixed ephemeral key provided by the test harness.
                    To support New Hope we need to perform a dependent copy */

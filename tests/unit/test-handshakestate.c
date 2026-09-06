@@ -432,7 +432,7 @@ static void handshakestate_check_protocols(void)
     check_handshake_protocol("Noise_K_25519_AESGCM_SHA256");
     check_handshake_protocol("Noise_X_448_AESGCM_SHA512");
 
-    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_BLAKE2s");
     check_handshake_protocol("Noise_NK_448_ChaChaPoly_BLAKE2b");
     check_handshake_protocol("Noise_NX_25519_AESGCM_BLAKE2b");
 
@@ -741,6 +741,11 @@ static void handshakestate_check_preset_ephemeral(void)
     compare(noise_handshakestate_set_local_ephemeral
                 (initiator, private_key, 32, public_key, 32),
             NOISE_ERROR_NONE);
+
+    /* A second key pair cannot replace the first */
+    compare(noise_handshakestate_set_local_ephemeral
+                (initiator, private_key, 32, public_key, 32),
+            NOISE_ERROR_INVALID_STATE);
     compare(noise_handshakestate_start(initiator), NOISE_ERROR_NONE);
     compare(noise_handshakestate_start(responder), NOISE_ERROR_NONE);
 
@@ -775,9 +780,11 @@ static void handshakestate_check_preset_ephemeral(void)
 
 void test_handshakestate(void)
 {
+    /* First: the checks below stop at the first algorithm this build
+       leaves out, and this one only needs Curve25519 */
+    handshakestate_check_preset_ephemeral();
     handshakestate_derive_keys();
     handshakestate_check_protocols();
     handshakestate_check_fallback();
-    handshakestate_check_preset_ephemeral();
     handshakestate_check_errors();
 }

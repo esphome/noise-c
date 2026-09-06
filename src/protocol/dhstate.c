@@ -401,6 +401,51 @@ int noise_dhstate_set_keypair
 }
 
 /**
+ * \brief Sets the keypair within a DHState object without verifying it.
+ *
+ * \param state The DHState object.
+ * \param private_key Points to the private key.
+ * \param private_key_len Length of the private key in bytes.
+ * \param public_key Points to the public key.
+ * \param public_key_len Length of the public key in bytes.
+ *
+ * \return NOISE_ERROR_NONE on success.
+ * \return NOISE_ERROR_INVALID_PARAM if \a state, \a private_key or
+ * \a public_key is NULL.
+ * \return NOISE_ERROR_NOT_APPLICABLE if the algorithm derives its keys
+ * from the remote party's, as New Hope does.
+ * \return NOISE_ERROR_INVALID_LENGTH if a key length is wrong for the
+ * algorithm.
+ *
+ * Internal counterpart of noise_dhstate_set_keypair() that copies the two
+ * keys straight into the DHState's buffers instead of going through the
+ * backend's set_keypair hook, which recomputes the public key to check the
+ * pair. Only valid for backends whose entire key state is those two
+ * buffers, which every non ephemeral-only backend in this library
+ * satisfies; a backend that keeps more must not be used with it.
+ */
+int noise_dhstate_set_keypair_unchecked
+    (NoiseDHState *state, const uint8_t *private_key, size_t private_key_len,
+     const uint8_t *public_key, size_t public_key_len)
+{
+    /* Validate the parameters */
+    if (!state || !private_key || !public_key)
+        return NOISE_ERROR_INVALID_PARAM;
+    if (state->ephemeral_only)
+        return NOISE_ERROR_NOT_APPLICABLE;
+    if (private_key_len != state->private_key_len)
+        return NOISE_ERROR_INVALID_LENGTH;
+    if (public_key_len != state->public_key_len)
+        return NOISE_ERROR_INVALID_LENGTH;
+
+    /* Copy the keypair as is */
+    memcpy(state->private_key, private_key, private_key_len);
+    memcpy(state->public_key, public_key, public_key_len);
+    state->key_type = NOISE_KEY_TYPE_KEYPAIR;
+    return NOISE_ERROR_NONE;
+}
+
+/**
  * \brief Sets the keypair within a DHState object based on a private key only.
  *
  * \param state The DHState object.

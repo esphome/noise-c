@@ -550,6 +550,11 @@ struct NoiseHandshakeState_s
     /** \brief Next action to be taken by the application */
     int action;
 
+    /** \brief Non-zero if the application supplied the local ephemeral
+        key pair with noise_handshakestate_set_local_ephemeral() and the
+        "e" token has not consumed it yet */
+    uint8_t local_ephemeral_supplied : 1;
+
     /** \brief Expanded message pattern for the current handshake */
     uint8_t pattern[NOISE_MAX_TOKENS];
 
@@ -699,5 +704,9 @@ int noise_pattern_expand
 #ifdef __cplusplus
 };
 #endif
+
+int noise_dhstate_set_keypair_unchecked
+    (NoiseDHState *state, const uint8_t *private_key, size_t private_key_len,
+     const uint8_t *public_key, size_t public_key_len);
 
 #endif
