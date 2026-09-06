@@ -1147,8 +1147,8 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
     /* Start a new token pattern for the fallback */
     memcpy(state->pattern, tokens, NOISE_MAX_TOKENS);
     state->tokens = state->pattern + 2;
-    /* The ephemeral either went out already or was just cleared; either
-       way no supplied key is pending any more */
+    /* No supplied key is pending any more: it was sent, cleared above, or
+       is abandoned with the failed attempt this fallback leaves behind */
     state->local_ephemeral_supplied = 0;
     state->action = NOISE_ACTION_NONE;
 
