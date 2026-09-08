@@ -105,8 +105,12 @@ static NoiseIdMapping const algorithm_names[] = {
     {NOISE_PATTERN_IX,          "IX",            2},
 
     /* Handshake pattern modifiers */
+#if NOISE_USE_FALLBACK
     {NOISE_MODIFIER_FALLBACK,   "fallback",      8},
+#endif
+#if NOISE_USE_HFS
     {NOISE_MODIFIER_HFS,        "hfs",           3},
+#endif
     {NOISE_MODIFIER_PSK0,       "psk0",          4},
     {NOISE_MODIFIER_PSK1,       "psk1",          4},
     {NOISE_MODIFIER_PSK2,       "psk2",          4},
@@ -406,6 +410,19 @@ int noise_ids_to_name_list(char *name, size_t name_len,
     }
     return NOISE_ERROR_NONE;
 }
+
+/* The tables are what let a build name any algorithm or pattern; without
+   them only the one protocol names-single.c knows can be built, and the
+   fallback modifier, which needs the XX patterns named, goes with them */
+#if !NOISE_USE_PROTOCOL_NAME_TABLE && \
+    (NOISE_USE_AES || NOISE_USE_SHA512 || NOISE_USE_BLAKE2S || \
+     NOISE_USE_BLAKE2B || NOISE_USE_CURVE448 || NOISE_USE_NEWHOPE || \
+     !NOISE_USE_SHA256 || !NOISE_USE_CHACHAPOLY || !NOISE_USE_CURVE25519 || \
+     NOISE_USE_FALLBACK)
+#error "Without the name tables only Noise_NNpsk0_25519_ChaChaPoly_SHA256 can be built"
+#endif
+
+#if NOISE_USE_PROTOCOL_NAME_TABLE
 
 /**
  * \brief Parses a field from a protocol name string.
@@ -760,5 +777,7 @@ int noise_protocol_id_to_name
     /* Done */
     return err;
 }
+
+#endif /* NOISE_USE_PROTOCOL_NAME_TABLE */
 
 /**@}*/

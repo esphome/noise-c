@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
     test(names);
     test(patterns);
     test(randstate);
+    test(single_protocol);
     test(symmetricstate);
 
     /* Report the results */

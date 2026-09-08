@@ -504,6 +504,7 @@ static int noise_pattern_put_token(int err, uint8_t output[NOISE_MAX_TOKENS],
     return NOISE_ERROR_NONE;
 }
 
+#if NOISE_USE_FALLBACK
 /**
  * \brief Expands a pattern using the "fallback" modifier.
  */
@@ -562,6 +563,9 @@ int noise_pattern_expand_fallback
     return noise_pattern_put_token(err, output, &out, NOISE_TOKEN_END);
 }
 
+#endif /* NOISE_USE_FALLBACK */
+
+#if NOISE_USE_HFS
 /**
  * \brief Expands a pattern using the "hfs" modifier.
  */
@@ -603,6 +607,8 @@ int noise_pattern_expand_hfs
         *flags |= NOISE_PAT_FLAG_REMOTE_HYBRID_REQ;
     return err;
 }
+
+#endif /* NOISE_USE_HFS */
 
 /**
  * \brief Expands a pattern using a "pskN" modifier.
@@ -704,12 +710,16 @@ int noise_pattern_expand
     for (index = 0; index < num_modifiers &&
                     err == NOISE_ERROR_NONE; ++index) {
         switch (modifiers[index]) {
+#if NOISE_USE_FALLBACK
         case NOISE_MODIFIER_FALLBACK:
             err = noise_pattern_expand_fallback(temp, pattern, &flags);
             break;
+#endif
+#if NOISE_USE_HFS
         case NOISE_MODIFIER_HFS:
             err = noise_pattern_expand_hfs(temp, pattern, &flags);
             break;
+#endif
         case NOISE_MODIFIER_PSK0:
         case NOISE_MODIFIER_PSK1:
         case NOISE_MODIFIER_PSK2:

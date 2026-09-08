@@ -68,6 +68,24 @@
 #define NOISE_USE_SODIUM_RAND (NOISE_USE_LIBSODIUM && !NOISE_USE_CUSTOM_RAND)
 #endif
 
+/* Three switches for builds that want the library smaller, all on by default
+   so nothing changes unless the build asks. ESPHome turns them off. */
+
+/* Format protocol names from the id tables. Off, noise_protocol_id_to_name
+   knows the one protocol ESPHome speaks and the tables are left out, which
+   pins the build to that one set of algorithms. */
+#ifndef NOISE_USE_PROTOCOL_NAME_TABLE
+#define NOISE_USE_PROTOCOL_NAME_TABLE 1
+#endif
+
+/* The "fallback" and "hfs" pattern modifiers, which ESPHome never asks for */
+#ifndef NOISE_USE_FALLBACK
+#define NOISE_USE_FALLBACK 1
+#endif
+#ifndef NOISE_USE_HFS
+#define NOISE_USE_HFS 1
+#endif
+
 #if NOISE_USE_REFERENCE_BACKEND
 
 #ifndef NOISE_USE_REFERENCE_CHACHA

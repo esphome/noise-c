@@ -27,6 +27,7 @@ set(NOISE_C_SRCS
   "src/protocol/handshakestate.c"
   "src/protocol/hashstate.c"
   "src/protocol/internal.c"
+  "src/protocol/names-single.c"
   "src/protocol/names.c"
   "src/protocol/patterns.c"
   "src/protocol/rand_os.c"
