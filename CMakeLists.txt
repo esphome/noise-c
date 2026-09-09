@@ -105,8 +105,8 @@ else()
       $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
     add_test(NAME vectors
       COMMAND noise-c-test-vector
-        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
-        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
-        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt")
+        --expect 36 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
+        --expect 15 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
+        --expect 1 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt")
   endif()
 endif()

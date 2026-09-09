@@ -852,7 +852,7 @@ static int process_test_vector(JSONReader *reader)
  *
  * \param reader The reader representing the input stream.
  */
-static void process_test_vectors(JSONReader *reader)
+static void process_test_vectors(JSONReader *reader, int expected_run)
 {
     int ok = 1;
     tests_run = 0;
@@ -877,8 +877,10 @@ static void process_test_vectors(JSONReader *reader)
     printf("--------------------------------------------------------------\n");
     printf("%d vectors run, %d skipped as not in this build\n",
            tests_run, tests_skipped);
-    if (!tests_run) {
-        printf("nothing ran: every vector in the file was skipped\n");
+    if (tests_run < expected_run) {
+        /* A broken name table would skip everything and look green */
+        printf("only %d of at least %d expected vectors ran\n",
+               tests_run, expected_run);
         ok = 0;
     }
     if (!ok) {
@@ -887,14 +889,14 @@ static void process_test_vectors(JSONReader *reader)
     }
 }
 
-static int process_file(const char *filename)
+static int process_file(const char *filename, int expected_run)
 {
     int retval = 0;
     FILE *file = fopen(filename, "r");
     if (file) {
         JSONReader reader;
         json_init(&reader, filename, file);
-        process_test_vectors(&reader);
+        process_test_vectors(&reader, expected_run);
         if (reader.errors > 0)
             retval = 1;
         json_free(&reader);
@@ -914,14 +916,24 @@ int main(int argc, char *argv[])
     }
 
     int retval = 0;
-    if (argc <= 1) {
-        fprintf(stderr, "Usage: %s vectors1.txt vectors2.txt ...\n", argv[0]);
-        return 1;
-    }
+    int expected_run = 1;
+    int files = 0;
     while (argc > 1) {
-        retval |= process_file(argv[1]);
+        if (!strcmp(argv[1], "--expect") && argc > 2) {
+            /* Applies to the files that follow */
+            expected_run = atoi(argv[2]);
+            argc -= 2;
+            argv += 2;
+            continue;
+        }
+        retval |= process_file(argv[1], expected_run);
+        ++files;
         --argc;
         ++argv;
+    }
+    if (!files) {
+        fprintf(stderr, "Usage: %s [--expect N] vectors1.txt ...\n", argv[0]);
+        return 1;
     }
     return retval;
 }
