@@ -22,7 +22,7 @@ jobs:
       - name: Install libsodium
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev
+          sudo apt-get install -y libsodium-dev pkg-config
       - name: Configure
         run: cmake -S . -B build -DNOISE_C_BUILD_TESTS=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
       - name: Build
