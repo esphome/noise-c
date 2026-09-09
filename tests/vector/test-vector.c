@@ -250,7 +250,9 @@ static int check_algorithm_field
         } else if (!noise_name_to_id(category, field, token_len)) {
             return 0;
         }
-        field += token_len + 1;
+        if (!plus)
+            break;
+        field = plus + 1;
     }
     return 1;
 }
