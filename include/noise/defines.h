@@ -100,8 +100,8 @@
 #ifndef NOISE_USE_MBEDTLS_SHA256
 #define NOISE_USE_MBEDTLS_SHA256 0
 #endif
-/* The reference backend keeps its own SHA256 for noise_format_fingerprint,
-   so the two cannot be swapped for each other */
+/* The reference backend always compiles its own SHA256, which this switch
+   cannot replace, so it would add a second copy rather than drop one */
 #if NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_REFERENCE_BACKEND
 #error "NOISE_USE_MBEDTLS_SHA256 needs a backend whose SHA256 it can replace; the reference backend builds its own"
 #endif

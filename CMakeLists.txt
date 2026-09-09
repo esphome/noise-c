@@ -55,6 +55,8 @@ else()
   option(NOISE_C_BUILD_TESTS "Build the unit and vector tests" OFF)
   option(NOISE_C_FIND_LIBSODIUM
     "Find a system libsodium with pkg-config instead of building ESPHome's fork" OFF)
+  option(NOISE_C_MBEDTLS_SHA256
+    "Hash through the system mbedTLS, as NOISE_USE_MBEDTLS_SHA256 does on a device" OFF)
 
   if(NOT TARGET sodium)
     if(NOISE_C_FIND_LIBSODIUM)
@@ -109,6 +111,17 @@ else()
   # link a libsodium target if the consumer has already defined one.
   if(TARGET sodium)
     target_link_libraries(noise_c PUBLIC sodium)
+  endif()
+
+  if(NOISE_C_MBEDTLS_SHA256)
+    find_path(NOISE_C_MBEDTLS_INCLUDE_DIR mbedtls/sha256.h)
+    find_library(NOISE_C_MBEDCRYPTO_LIBRARY mbedcrypto)
+    if(NOT NOISE_C_MBEDTLS_INCLUDE_DIR OR NOT NOISE_C_MBEDCRYPTO_LIBRARY)
+      message(FATAL_ERROR "NOISE_C_MBEDTLS_SHA256 needs mbedTLS's headers and mbedcrypto library")
+    endif()
+    target_compile_definitions(noise_c PRIVATE NOISE_USE_MBEDTLS_SHA256=1)
+    target_include_directories(noise_c PRIVATE "${NOISE_C_MBEDTLS_INCLUDE_DIR}")
+    target_link_libraries(noise_c PUBLIC "${NOISE_C_MBEDCRYPTO_LIBRARY}")
   endif()
 
   if(NOISE_C_BUILD_TESTS)
