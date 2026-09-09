@@ -513,6 +513,7 @@ static int test_vector_run(JSONReader *reader, const TestVector *vec)
         return 1;
     } else {
         printf("-> test data at %s:%ld\n", reader->filename, vec->line_number);
+        ++tests_run;
         return 0;
     }
 }
@@ -868,7 +869,7 @@ static void process_test_vectors(JSONReader *reader)
     printf("%d vectors run, %d skipped as not in this build\n",
            tests_run, tests_skipped);
     if (!tests_run) {
-        printf("nothing ran: this build names no protocol in the file\n");
+        printf("nothing ran: every vector in the file was skipped\n");
         ok = 0;
     }
     if (!ok) {
