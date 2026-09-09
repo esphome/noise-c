@@ -44,5 +44,11 @@ jobs:
         run: |
           cmake -S . -B build-lib -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
           cmake --build build-lib --parallel
+      - name: Build the library the way the microcontroller builds do, switches off
+        if: matrix.libsodium == 'system'
+        run: |
+          cmake -S . -B build-small -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_C_FLAGS="-DNOISE_USE_PROTOCOL_NAME_TABLE=0 -DNOISE_USE_FALLBACK=0 -DNOISE_USE_HFS=0"
+          cmake --build build-small --parallel
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
