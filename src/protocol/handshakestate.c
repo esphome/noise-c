@@ -1182,7 +1182,9 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
 
 int noise_handshakestate_fallback(NoiseHandshakeState *state)
 {
-    return noise_handshakestate_fallback_to(state, "XXfallback");
+    if (!state)
+        return NOISE_ERROR_INVALID_PARAM;
+    return NOISE_ERROR_NOT_APPLICABLE;
 }
 
 int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pattern)
