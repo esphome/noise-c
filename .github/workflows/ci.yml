@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   test:
-    name: Tests (${{ matrix.compiler }})
+    name: Tests (${{ matrix.compiler }}, ${{ matrix.libsodium }} libsodium)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,26 +17,24 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [gcc, clang]
+        libsodium: [fork, system]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install a system libsodium for the pkg-config builds
+      - name: Install the system libsodium
+        if: matrix.libsodium == 'system'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsodium-dev pkg-config
-      - name: Configure the tests against ESPHome's libsodium fork
+      - name: Configure against ESPHome's libsodium fork
+        if: matrix.libsodium == 'fork'
         run: cmake -S . -B build -DNOISE_C_BUILD_TESTS=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+      - name: Configure as a subdirectory of another project, against the system libsodium
+        if: matrix.libsodium == 'system'
+        run: |
+          mkdir -p "$RUNNER_TEMP/consumer"
+          printf 'cmake_minimum_required(VERSION 3.13)\nproject(consumer C)\nenable_testing()\nadd_subdirectory("%s" noise-c)\n' "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/consumer/CMakeLists.txt"
+          cmake -S "$RUNNER_TEMP/consumer" -B build -DNOISE_C_BUILD_TESTS=ON -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
       - name: Build
         run: cmake --build build --parallel
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
-      - name: Test against the system libsodium as well
-        run: |
-          cmake -S . -B build-sys -DNOISE_C_BUILD_TESTS=ON -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
-          cmake --build build-sys --parallel
-          ctest --test-dir build-sys --output-on-failure --no-tests=error
-      - name: Build as a subdirectory of another project
-        run: |
-          mkdir -p "$RUNNER_TEMP/consumer"
-          printf 'cmake_minimum_required(VERSION 3.13)\nproject(consumer C)\nadd_subdirectory("%s" noise-c)\n' "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/consumer/CMakeLists.txt"
-          cmake -S "$RUNNER_TEMP/consumer" -B "$RUNNER_TEMP/consumer/build" -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
-          cmake --build "$RUNNER_TEMP/consumer/build" --parallel

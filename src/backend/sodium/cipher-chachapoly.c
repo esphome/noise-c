@@ -124,6 +124,10 @@ static int noise_chachapoly_decrypt
 
 #else /* stock libsodium fallback */
 
+#ifdef NOISE_REQUIRE_SODIUM_FAST_PATH
+#error "noise-c: the esphome libsodium fast path was required but is not available"
+#endif
+
 typedef struct
 {
     struct NoiseCipherState_s parent;

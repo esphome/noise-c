@@ -56,7 +56,7 @@
 #define RANDOM_WIN32    1
 #endif
 
-#if !NOISE_USE_CUSTOM_RAND
+#if !NOISE_USE_CUSTOM_RAND && !NOISE_USE_LIBSODIUM
 /**
  * \brief Gets cryptographically-strong random bytes from the operating system.
  *
@@ -104,7 +104,7 @@ void noise_rand_bytes(void *bytes, size_t size) {
     fprintf(stderr, "Do not know how to generate random numbers!  Abort!\n");
     exit(1);
 }
-#endif  // !NOISE_USE_CUSTOM_RAND
+#endif  // !NOISE_USE_CUSTOM_RAND && !NOISE_USE_LIBSODIUM
 
 #ifdef ED25519_CUSTOMRANDOM
 

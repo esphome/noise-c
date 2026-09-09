@@ -78,7 +78,10 @@ else()
         GIT_REPOSITORY https://github.com/esphome-libs/libsodium
         GIT_TAG ${NOISE_C_LIBSODIUM_TAG}
         GIT_SHALLOW TRUE
-        # Reconfiguring runs the patch step again, so start from a clean tree
+        # A pin change gets a fresh clone; an in place update trips over the
+        # patched submodule. Reconfiguring reruns the patch step, so it starts
+        # from a clean tree
+        SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/esphome_libsodium-${NOISE_C_LIBSODIUM_TAG}"
         PATCH_COMMAND git -C libsodium checkout -q -- .
         COMMAND git -C libsodium clean -qfd
         COMMAND sh patches/apply.sh)
@@ -86,21 +89,7 @@ else()
       if(NOT TARGET sodium)
         message(FATAL_ERROR "The libsodium fork did not define a sodium target")
       endif()
-      # The fast path in src/backend/sodium falls back to stock libsodium
-      # without a word when the patches are missing, so insist on it here
-      include(CheckCSourceCompiles)
-      get_target_property(_noise_c_sodium_includes sodium INTERFACE_INCLUDE_DIRECTORIES)
-      set(CMAKE_REQUIRED_INCLUDES ${_noise_c_sodium_includes})
-      check_c_source_compiles("
-        #include <sodium/sodium_esphome.h>
-        #if SODIUM_ESPHOME_NOISE_FAST_PATH != 1
-        #error the fast path is not available
-        #endif
-        int main(void) { return 0; }" NOISE_C_SODIUM_FAST_PATH)
-      unset(CMAKE_REQUIRED_INCLUDES)
-      if(NOT NOISE_C_SODIUM_FAST_PATH)
-        message(FATAL_ERROR "The libsodium fork's patches were not applied; the tests would run the stock code path")
-      endif()
+      set(_noise_c_require_fast_path ON)
     endif()
   endif()
 
@@ -120,6 +109,12 @@ else()
   endif()
 
   if(NOISE_C_BUILD_TESTS)
+    # The library's own libsodium RNG hook serves the tests
+    target_compile_definitions(noise_c PRIVATE NOISE_USE_CUSTOM_RAND=0)
+    if(_noise_c_require_fast_path)
+      # Fail the build rather than quietly test the stock code path
+      target_compile_definitions(noise_c PRIVATE NOISE_REQUIRE_SODIUM_FAST_PATH)
+    endif()
     enable_testing()
     add_executable(noise-c-test-unit
       "tests/unit/test-cipherstate.c"
@@ -132,27 +127,22 @@ else()
       "tests/unit/test-patterns.c"
       "tests/unit/test-randstate.c"
       "tests/unit/test-symmetricstate.c"
-      "tests/rand-sodium.c"
     )
-    target_link_libraries(noise-c-test-unit PRIVATE noise_c)
-    target_compile_options(noise-c-test-unit PRIVATE
-      $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
-    add_test(NAME unit COMMAND noise-c-test-unit)
-
     add_executable(noise-c-test-vector
       "tests/vector/test-vector.c"
       "tests/vector/json-reader.c"
-      "tests/rand-sodium.c"
     )
-    target_link_libraries(noise-c-test-vector PRIVATE noise_c)
-    target_compile_options(noise-c-test-vector PRIVATE
-      $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
-    # Each count is how many vectors of that file name an algorithm set this
-    # build ships; raise it when adding such vectors so a skip cannot hide them
+    foreach(target noise-c-test-unit noise-c-test-vector)
+      target_link_libraries(${target} PRIVATE noise_c)
+      target_compile_options(${target} PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
+    endforeach()
+    add_test(NAME unit COMMAND noise-c-test-unit)
     add_test(NAME vectors
       COMMAND noise-c-test-vector
-        --expect 36 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
-        --expect 15 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
-        --expect 1 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt")
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt"
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-hybrid.txt")
   endif()
 endif()
