@@ -1,4 +1,5 @@
 set(NOISE_C_SRCS
+  "src/backend/mbedtls/hash-sha256.c"
   "src/backend/openssl/cipher-aesgcm.c"
   "src/backend/ref/cipher-aesgcm.c"
   "src/backend/ref/cipher-chachapoly.c"
@@ -43,6 +44,7 @@ if(ESP_PLATFORM)
     SRCS ${NOISE_C_SRCS}
     INCLUDE_DIRS "include" "src"
     REQUIRES esphome__libsodium
+    PRIV_REQUIRES mbedtls
   )
 else()
   cmake_minimum_required(VERSION 3.13)

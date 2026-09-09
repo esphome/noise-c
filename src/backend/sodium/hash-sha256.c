@@ -22,7 +22,7 @@
  */
 
 #include "noise/defines.h"
-#if NOISE_USE_LIBSODIUM
+#if NOISE_USE_LIBSODIUM && NOISE_USE_SHA256 && !NOISE_USE_MBEDTLS_SHA256
 
 #include "protocol/internal.h"
 #include <sodium.h>

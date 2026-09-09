@@ -86,6 +86,26 @@
 #define NOISE_USE_HFS 1
 #endif
 
+/* Hash through the platform's mbedTLS rather than the selected backend's own
+   SHA256, which saves the flash that copy takes where mbedTLS is already in
+   the image; the build that asks for it supplies the mbedTLS link. Whether it
+   pays depends on how the platform hashes. Through PSA, which is where
+   mbedTLS 4 puts it, nothing new is linked and the flash is free. Through the
+   ESP32 SHA peripheral driver every hash takes and releases the engine, and a
+   handshake is many short hashes, so it costs more time than the hardware
+   saves. A hash that fails, which needs the platform to run out of memory,
+   is reported as a zero digest for that hash; the layers above then produce
+   a wrong result rather than an error, so a handshake fails on the peer's
+   MAC and noise_hashstate_pbkdf2 hands back a wrong key. */
+#ifndef NOISE_USE_MBEDTLS_SHA256
+#define NOISE_USE_MBEDTLS_SHA256 0
+#endif
+/* The reference backend keeps its own SHA256 for noise_format_fingerprint,
+   so the two cannot be swapped for each other */
+#if NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_REFERENCE_BACKEND
+#error "NOISE_USE_MBEDTLS_SHA256 needs a backend whose SHA256 it can replace; the reference backend builds its own"
+#endif
+
 #if NOISE_USE_REFERENCE_BACKEND
 
 #ifndef NOISE_USE_REFERENCE_CHACHA
