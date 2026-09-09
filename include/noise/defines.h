@@ -8,6 +8,14 @@
 #define NOISE_USE_CURVE25519 1
 #endif
 
+#ifndef NOISE_USE_CURVE448
+#define NOISE_USE_CURVE448 0
+#endif
+
+#ifndef NOISE_USE_NEWHOPE
+#define NOISE_USE_NEWHOPE 0
+#endif
+
 #ifndef NOISE_USE_BLAKE2B
 #define NOISE_USE_BLAKE2B 0
 #endif

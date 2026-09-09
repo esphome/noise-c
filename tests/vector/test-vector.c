@@ -200,12 +200,6 @@ static void dump_block(uint8_t *block, size_t len)
 
 /* Algorithms upstream names that this build may leave out; a vector naming
    one that is off is skipped, any other unknown name is a failure */
-#ifndef NOISE_USE_CURVE448
-#define NOISE_USE_CURVE448 0
-#endif
-#ifndef NOISE_USE_NEWHOPE
-#define NOISE_USE_NEWHOPE 0
-#endif
 static const struct {
     const char *name;
     int built;
@@ -745,7 +739,7 @@ static size_t parse_psk_list(JSONReader *reader, uint8_t psks[MAX_PSKS][32])
 static int process_test_vector(JSONReader *reader)
 {
     TestVector vec;
-    int retval = 1;
+    int retval = 0;
     int spelled;
     memset(&vec, 0, sizeof(TestVector));
     vec.line_number = reader->line_number;
@@ -890,7 +884,7 @@ static int process_test_vector(JSONReader *reader)
  *
  * \param reader The reader representing the input stream.
  */
-static void process_test_vectors(JSONReader *reader)
+static void process_test_vectors(JSONReader *reader, int *total_run)
 {
     int ok = 1;
     int run = 0;
@@ -924,20 +918,21 @@ static void process_test_vectors(JSONReader *reader)
         printf("no vectors were found in this file\n");
         ok = 0;
     }
+    *total_run += run;
     if (!ok) {
         /* Some of the test vectors failed, so report a global failure */
         ++(reader->errors);
     }
 }
 
-static int process_file(const char *filename)
+static int process_file(const char *filename, int *total_run)
 {
     int retval = 0;
     FILE *file = fopen(filename, "r");
     if (file) {
         JSONReader reader;
         json_init(&reader, filename, file);
-        process_test_vectors(&reader);
+        process_test_vectors(&reader, total_run);
         if (reader.errors > 0)
             retval = 1;
         json_free(&reader);
@@ -957,14 +952,20 @@ int main(int argc, char *argv[])
     }
 
     int retval = 0;
+    int total_run = 0;
     if (argc <= 1) {
         fprintf(stderr, "Usage: %s vectors1.txt vectors2.txt ...\n", argv[0]);
         return 1;
     }
     while (argc > 1) {
-        retval |= process_file(argv[1]);
+        retval |= process_file(argv[1], &total_run);
         --argc;
         ++argv;
+    }
+    if (!total_run) {
+        /* Every file skipping everything would otherwise look green */
+        printf("no vectors ran in any file\n");
+        retval = 1;
     }
     return retval;
 }
