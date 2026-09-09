@@ -136,7 +136,6 @@ static void check_hash(int id, size_t hash_len, size_t block_len,
    to validate that the algorithms work as low level primitives */
 static void hashstate_check_test_vectors(void)
 {
-
     /* SHA256 */
     check_hash
         (NOISE_HASH_SHA256, 32, 64, "SHA256",
@@ -150,7 +149,6 @@ static void hashstate_check_test_vectors(void)
         (NOISE_HASH_SHA256, 32, 64, "SHA256",
          "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
          "0x248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
-
 }
 
 /* Formats a key for the simple implementation of HMAC */

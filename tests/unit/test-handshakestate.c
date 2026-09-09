@@ -79,7 +79,6 @@ static void handshakestate_derive_keys(void)
                 (dh, resp_public_25519_alt, sizeof(resp_public_25519_alt)),
             NOISE_ERROR_NONE);
     compare(noise_dhstate_free(dh), NOISE_ERROR_NONE);
-
 }
 
 /* Determine if a handshake needs a pre-shared key */

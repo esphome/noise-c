@@ -811,9 +811,14 @@ static int process_test_vector(JSONReader *reader)
             json_error(reader, "Unknown field '%s'", reader->str_value);
         }
     }
-    if (!vec.protocol_name && vec.name) {
-        /* The noise-c vector files name each vector by its protocol */
-        vec.protocol_name = strdup(vec.name);
+    if (vec.pattern && vec.dh && vec.cipher && vec.hash) {
+        /* The noise-c files spell out the protocol the handshake starts
+           with; in the fallback file "name" is the one it ends on */
+        char spelled[NOISE_MAX_PROTOCOL_NAME];
+        snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
+                 vec.pattern, vec.dh, vec.cipher, vec.hash);
+        free(vec.protocol_name);
+        vec.protocol_name = strdup(spelled);
         if (!vec.protocol_name)
             json_error(reader, "Out of memory");
     }
@@ -824,18 +829,6 @@ static int process_test_vector(JSONReader *reader)
         vec.name = strdup(vec.protocol_name);
         if (!vec.name)
             json_error(reader, "Out of memory");
-    }
-    if (!reader->errors && vec.pattern && vec.dh && vec.cipher && vec.hash) {
-        /* The noise-c files also spell the protocol out field by field;
-           the fallback file names the protocol the handshake ends on, not
-           the one it starts with, so refuse rather than run the wrong one */
-        char spelled[NOISE_MAX_PROTOCOL_NAME];
-        snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
-                 vec.pattern, vec.dh, vec.cipher, vec.hash);
-        if (strcmp(spelled, vec.protocol_name) != 0) {
-            json_error(reader, "'name' %s does not match the fields %s",
-                       vec.protocol_name, spelled);
-        }
     }
     if (!reader->errors) {
         retval = test_vector_run(reader, &vec);

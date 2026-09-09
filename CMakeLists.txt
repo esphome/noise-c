@@ -53,7 +53,7 @@ else()
 
   if(NOISE_C_FIND_LIBSODIUM AND NOT TARGET sodium)
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
+    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET GLOBAL libsodium)
     add_library(sodium INTERFACE IMPORTED GLOBAL)
     target_link_libraries(sodium INTERFACE PkgConfig::LIBSODIUM)
   endif()
@@ -104,6 +104,7 @@ else()
     add_test(NAME vectors
       COMMAND noise-c-test-vector
         "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
-        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt")
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt")
   endif()
 endif()

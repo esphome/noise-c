@@ -253,7 +253,6 @@ static void cipherstate_check_test_vectors(void)
            "49e617d91d361094fa68f0ff77987130305beaba2eda04df997b714d6c6f2c29"
            "a6ad5cb4022b02709b",
          "0xeead9d67890cbb22392336fea1851f38");
-
 }
 
 /* Check other error conditions that can be reported by the functions */
