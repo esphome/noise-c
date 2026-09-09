@@ -265,14 +265,14 @@ static void cipherstate_check_errors(void)
     compare(noise_cipherstate_get_cipher_id(0), NOISE_CIPHER_NONE);
     compare(noise_cipherstate_get_key_length(0), 0);
     compare(noise_cipherstate_get_mac_length(0), 0);
-    compare(noise_cipherstate_new_by_id(0, NOISE_HASH_SHA256),
+    compare(noise_cipherstate_new_by_id(0, NOISE_CIPHER_CHACHAPOLY),
             NOISE_ERROR_INVALID_PARAM);
     compare(noise_cipherstate_new_by_name(0, "ChaChaPoly"),
             NOISE_ERROR_INVALID_PARAM);
 
     /* If the id/name is unknown, the state parameter should be set to NULL */
     state = (NoiseCipherState *)8;
-    compare(noise_cipherstate_new_by_id(&state, NOISE_HASH_SHA256),
+    compare(noise_cipherstate_new_by_id(&state, NOISE_ID('C', 200)),
             NOISE_ERROR_UNKNOWN_ID);
     verify(state == NULL);
     state = (NoiseCipherState *)8;
