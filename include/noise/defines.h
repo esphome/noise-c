@@ -96,7 +96,8 @@
    saves. Creating the hash state can fail, with PSA not initialising for
    instance, and that is returned as NOISE_ERROR_NO_MEMORY. A hash the
    platform refuses once the state exists, which takes the platform running
-   out of memory, is reported as a zero digest for that hash; the layers
+   out of memory, yields a random digest for that hash, random rather than
+   a constant so two peers refused alike cannot agree on one; the layers
    above then produce a wrong result rather than an error, so a handshake
    fails on the peer's MAC and noise_hashstate_pbkdf2 hands back a wrong
    key. */

@@ -148,10 +148,12 @@ typedef struct
     struct NoiseHashState_s parent;
     noise_sha256_ctx sha256;
     /* The hash interface cannot report a failure, so a failed step is
-       remembered here and finalize writes zeros rather than leaving key
-       material unset. Reset clears it, so an HMAC whose inner hash failed
-       still finishes with a digest, just a wrong one; the handshake then
-       fails on the peer's MAC and pbkdf2 hands back a wrong key. */
+       remembered here and finalize writes random bytes rather than leaving
+       key material unset; random rather than zero, so two peers refused the
+       same way cannot agree on a digest. Reset clears it, so an HMAC whose
+       inner hash failed still finishes with a digest, just a wrong one; the
+       handshake then fails on the peer's MAC and pbkdf2 hands back a wrong
+       key. */
     int failed;
 
 } NoiseSHA256State;
@@ -175,7 +177,7 @@ static void noise_sha256_finalize(NoiseHashState *state, uint8_t *hash)
     if (noise_sha256_ctx_finish(&(st->sha256), hash))
         st->failed = 1;
     if (st->failed)
-        memset(hash, 0, state->hash_len);
+        noise_rand_bytes(hash, state->hash_len);
 }
 
 static void noise_sha256_destroy(NoiseHashState *state)
