@@ -238,7 +238,8 @@ static int check_algorithm_field
     while (field < end) {
         const char *plus = memchr(field, '+', (size_t)(end - field));
         size_t token_len = plus ? (size_t)(plus - field) : (size_t)(end - field);
-        if (plus && category != NOISE_DH_CATEGORY)
+        if (token_len == 0 || (plus && (category != NOISE_DH_CATEGORY ||
+                                        plus + 1 == end)))
             return 0;
         if (absent_algorithm(field, token_len)) {
             ++(*absent);
