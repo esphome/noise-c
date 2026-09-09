@@ -28,6 +28,27 @@ jmp_buf test_jump_back;
 const char *data_name = 0;
 int verbose = 0;
 
+/* True when the test was named on the command line, or none were */
+static int test_selected(int argc, char *argv[], const char *name)
+{
+    int index;
+    int any = 0;
+    for (index = 1; index < argc; ++index) {
+        if (!strcmp(argv[index], "--verbose"))
+            continue;
+        any = 1;
+        if (!strcmp(argv[index], name))
+            return 1;
+    }
+    return !any;
+}
+
+#define run(func) \
+    do { \
+        if (test_selected(argc, argv, #func)) \
+            test(func); \
+    } while (0)
+
 int main(int argc, char *argv[])
 {
     /* Parse the command-line arguments */
@@ -40,17 +61,18 @@ int main(int argc, char *argv[])
     }
 
     /* Run all tests */
-    test(cipherstate);
-    test(dhstate);
-    test(errors);
-    test(handshakestate);
-    test(handshakestate_preset_ephemeral);
-    test(hashstate);
-    test(names);
-    test(patterns);
-    test(randstate);
-    test(single_protocol);
-    test(symmetricstate);
+    run(cipherstate);
+    run(dhstate);
+    run(errors);
+    run(handshakestate);
+    run(handshakestate_preset_ephemeral);
+    run(hashstate);
+    run(names);
+    run(patterns);
+    run(randstate);
+    run(single_protocol);
+    run(small_build);
+    run(symmetricstate);
 
     /* Report the results */
     if (!test_failures) {

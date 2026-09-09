@@ -128,6 +128,7 @@ else()
       "tests/unit/test-patterns.c"
       "tests/unit/test-randstate.c"
       "tests/unit/test-single-protocol.c"
+      "tests/unit/test-small-build.c"
       "tests/unit/test-symmetricstate.c"
     )
     add_executable(noise-c-test-vector
