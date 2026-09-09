@@ -198,15 +198,18 @@ static void dump_block(uint8_t *block, size_t len)
         } \
     } while (0)
 
-/* Algorithms upstream names that this build may leave out; a vector naming
-   one that is off is skipped, any other unknown name is a failure */
+/* Every algorithm the name table gates on a build flag; a vector naming one
+   that is off is skipped, any other unknown name is a failure */
 static const struct {
     const char *name;
     int built;
 } algorithms[] = {
+    {"25519", NOISE_USE_CURVE25519},
     {"448", NOISE_USE_CURVE448},
     {"NewHope", NOISE_USE_NEWHOPE},
+    {"ChaChaPoly", NOISE_USE_CHACHAPOLY},
     {"AESGCM", NOISE_USE_AES},
+    {"SHA256", NOISE_USE_SHA256},
     {"BLAKE2s", NOISE_USE_BLAKE2S},
     {"BLAKE2b", NOISE_USE_BLAKE2B},
     {"SHA512", NOISE_USE_SHA512},
