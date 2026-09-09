@@ -36,7 +36,7 @@
  */
 typedef struct
 {
-    long line_number;               /**< Line number for the "name" */
+    long line_number;               /**< Line number of the first field */
     char *name;                     /**< Full name of the test case */
     char *protocol_name;            /**< Full name of the protocol */
     char *pattern;                  /**< Pattern spelled out by the noise-c files */
@@ -712,12 +712,11 @@ static int process_test_vector(JSONReader *reader)
     TestVector vec;
     int retval = 1;
     memset(&vec, 0, sizeof(TestVector));
+    vec.line_number = reader->line_number;
     while (!reader->errors && reader->token == JSON_TOKEN_STRING) {
         if (json_is_name(reader, "name")) {
-            vec.line_number = reader->line_number;
             expect_string_field(reader, &(vec.name));
         } else if (json_is_name(reader, "protocol_name")) {
-            vec.line_number = reader->line_number;
             expect_string_field(reader, &(vec.protocol_name));
         } else if (json_is_name(reader, "pattern")) {
             expect_string_field(reader, &(vec.pattern));
@@ -922,6 +921,10 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[1], "--expect") && argc > 2) {
             /* Applies to the files that follow */
             expected_run = atoi(argv[2]);
+            if (expected_run <= 0) {
+                fprintf(stderr, "--expect needs a positive count\n");
+                return 1;
+            }
             argc -= 2;
             argv += 2;
             continue;
