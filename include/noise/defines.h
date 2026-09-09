@@ -101,12 +101,6 @@
 #ifndef NOISE_USE_MBEDTLS_SHA256
 #define NOISE_USE_MBEDTLS_SHA256 0
 #endif
-/* The reference backend always compiles its own SHA256, which this switch
-   cannot replace, so it would add a second copy rather than drop one */
-#if NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_REFERENCE_BACKEND
-#error "NOISE_USE_MBEDTLS_SHA256 needs a backend whose SHA256 it can replace; the reference backend builds its own"
-#endif
-
 #if NOISE_USE_REFERENCE_BACKEND
 
 #ifndef NOISE_USE_REFERENCE_CHACHA
@@ -119,6 +113,11 @@
 
 #ifndef NOISE_USE_REFERENCE_SHA256
 #define NOISE_USE_REFERENCE_SHA256 NOISE_USE_SHA256
+#endif
+/* The reference SHA256 is its own copy that the mbedTLS switch cannot
+   replace, so the two together would add a copy rather than drop one */
+#if NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_REFERENCE_SHA256
+#error "NOISE_USE_MBEDTLS_SHA256 replaces a backend's SHA256; turn NOISE_USE_REFERENCE_SHA256 off"
 #endif
 
 #ifndef NOISE_USE_REFERENCE_DONNA_CURVE25519

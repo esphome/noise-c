@@ -816,6 +816,8 @@ int noise_dhstate_copy(NoiseDHState *state, const NoiseDHState *from)
  * hold the entire fingerprint string.
  * \return NOISE_ERROR_INVALID_STATE if a public key has not been set
  * on \a state yet.
+ * \return NOISE_ERROR_NO_MEMORY if the hash state for the fingerprint
+ * could not be allocated.
  *
  * Fingerprints are created by hashing the public key with SHA256 and
  * then formatting the value in hexadecimal with bytes separated by colons.

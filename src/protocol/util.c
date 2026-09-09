@@ -26,6 +26,17 @@
 #if NOISE_USE_LIBSODIUM
 #include <sodium.h>
 #endif
+#if !NOISE_USE_SHA256
+/* No SHA256 hash state to go through, so hash the fingerprint directly */
+#if NOISE_USE_LIBSODIUM
+typedef crypto_hash_sha256_state sha256_context_t;
+#define sha256_reset(ctx) crypto_hash_sha256_init(ctx)
+#define sha256_update(ctx, pub, pub_len) crypto_hash_sha256_update(ctx, pub, pub_len)
+#define sha256_finish(ctx, hash) crypto_hash_sha256_final(ctx, hash)
+#else
+#include "crypto/sha2/sha256.h"
+#endif
+#endif
 #if NOISE_USE_OPENSSL
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -243,9 +254,7 @@ int noise_format_fingerprint
      const uint8_t *public_key, size_t public_key_len)
 {
     static char const hexchars[] = "0123456789abcdef";
-    NoiseHashState *sha256;
     uint8_t hash[32];
-    int err;
     size_t f_len;
     size_t posn;
 
@@ -270,16 +279,29 @@ int noise_format_fingerprint
     if ((f_len * 3) > len)
         return NOISE_ERROR_INVALID_LENGTH;
 
+#if NOISE_USE_SHA256
     /* Hash the public key with the backend's SHA256, so a build that
        swaps that implementation swaps this one too */
-    err = noise_hashstate_new_by_id(&sha256, NOISE_HASH_SHA256);
-    if (err != NOISE_ERROR_NONE)
-        return err;
-    err = noise_hashstate_hash_one
-        (sha256, public_key, public_key_len, hash, sizeof(hash));
-    noise_hashstate_free(sha256);
-    if (err != NOISE_ERROR_NONE)
-        return err;
+    {
+        NoiseHashState *sha256;
+        int err = noise_hashstate_new_by_id(&sha256, NOISE_HASH_SHA256);
+        if (err != NOISE_ERROR_NONE)
+            return err;
+        err = noise_hashstate_hash_one
+            (sha256, public_key, public_key_len, hash, sizeof(hash));
+        noise_hashstate_free(sha256);
+        if (err != NOISE_ERROR_NONE)
+            return err;
+    }
+#else
+    {
+        sha256_context_t sha256;
+        sha256_reset(&sha256);
+        sha256_update(&sha256, public_key, public_key_len);
+        sha256_finish(&sha256, hash);
+        noise_clean(&sha256, sizeof(sha256));
+    }
+#endif
 
     /* Format the fingerprint in hexadecimal within the buffer */
     for (posn = 0; posn < f_len; ++posn) {

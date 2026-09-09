@@ -402,9 +402,50 @@ static void dhstate_check_errors(void)
     verify(state == NULL);
 }
 
+/* Fingerprints go through the build's SHA256, so a known public key must
+   format the same whichever implementation provides it */
+static void dhstate_check_fingerprint(void)
+{
+    static const uint8_t alice_public[32] = {
+        0x85, 0x20, 0xf0, 0x09, 0x89, 0x30, 0xa7, 0x54,
+        0x74, 0x8b, 0x7d, 0xdc, 0xb4, 0x3e, 0xf7, 0x5a,
+        0x0d, 0xbf, 0x3a, 0x0d, 0x26, 0x38, 0x1a, 0xf4,
+        0xeb, 0xa4, 0xa9, 0x8e, 0xaa, 0x9b, 0x4e, 0x6a
+    };
+    static const char full[] =
+        "30:0c:9c:96:03:b9:2a:4b:39:ed:39:58:bf:92:40:11:"
+        "48:04:db:4f:d3:73:01:2c:0c:a4:74:32:d6:34:25:ae";
+    static const char basic[] =
+        "30:0c:9c:96:03:b9:2a:4b:39:ed:39:58:bf:92:40:11";
+    NoiseDHState *state;
+    char buffer[NOISE_MAX_FINGERPRINT_LEN];
+
+    compare(noise_dhstate_new_by_id(&state, NOISE_DH_CURVE25519),
+            NOISE_ERROR_NONE);
+    compare(noise_dhstate_format_fingerprint
+                (state, NOISE_FINGERPRINT_FULL, buffer, sizeof(buffer)),
+            NOISE_ERROR_INVALID_STATE);
+    compare(noise_dhstate_set_public_key
+                (state, alice_public, sizeof(alice_public)),
+            NOISE_ERROR_NONE);
+    compare(noise_dhstate_format_fingerprint
+                (state, NOISE_FINGERPRINT_FULL, buffer, sizeof(buffer)),
+            NOISE_ERROR_NONE);
+    verify(!strcmp(buffer, full));
+    compare(noise_dhstate_format_fingerprint
+                (state, NOISE_FINGERPRINT_BASIC, buffer, sizeof(buffer)),
+            NOISE_ERROR_NONE);
+    verify(!strcmp(buffer, basic));
+    compare(noise_dhstate_format_fingerprint
+                (state, NOISE_FINGERPRINT_FULL, buffer, sizeof(basic)),
+            NOISE_ERROR_INVALID_LENGTH);
+    compare(noise_dhstate_free(state), NOISE_ERROR_NONE);
+}
+
 void test_dhstate(void)
 {
     dhstate_check_test_vectors();
     dhstate_check_generate_keypair();
     dhstate_check_errors();
+    dhstate_check_fingerprint();
 }

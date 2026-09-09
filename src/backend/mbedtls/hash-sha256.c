@@ -53,7 +53,6 @@
 #if !defined(PSA_WANT_ALG_SHA_256)
 #error "NOISE_USE_MBEDTLS_SHA256 needs a PSA crypto built with SHA256"
 #endif
-#define NOISE_SHA256_PSA 1
 typedef psa_hash_operation_t noise_sha256_ctx;
 
 static void noise_sha256_ctx_init(noise_sha256_ctx *ctx)
@@ -93,9 +92,8 @@ static void noise_sha256_ctx_free(noise_sha256_ctx *ctx)
 #include <mbedtls/sha256.h>
 #include <mbedtls/version.h>
 #if !defined(MBEDTLS_SHA256_C)
-#error "NOISE_USE_MBEDTLS_SHA256 needs an mbedTLS built with SHA256"
+#error "NOISE_USE_MBEDTLS_SHA256 needs an mbedTLS built with SHA256, or NOISE_SHA256_VIA_PSA to hash through PSA"
 #endif
-#define NOISE_SHA256_PSA 0
 typedef mbedtls_sha256_context noise_sha256_ctx;
 
 /* 2.7 renamed the three calls to _ret when they gained a return value, and
@@ -189,7 +187,7 @@ static void noise_sha256_destroy(NoiseHashState *state)
 NoiseHashState *noise_sha256_new(void)
 {
     NoiseSHA256State *state;
-#if NOISE_SHA256_PSA
+#ifdef NOISE_SHA256_VIA_PSA
     /* Idempotent, and the application may not have done it yet */
     if (psa_crypto_init() != PSA_SUCCESS)
         return 0;
