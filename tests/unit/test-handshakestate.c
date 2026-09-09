@@ -351,32 +351,26 @@ static void check_handshake_protocol(const char *name)
 
 static void handshakestate_check_protocols(void)
 {
-    check_handshake_protocol("Noise_N_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_K_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_X_25519_ChaChaPoly_SHA256");
-
-    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_NK_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_NX_25519_ChaChaPoly_SHA256");
-
-    check_handshake_protocol("Noise_XN_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_XK_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_XX_25519_ChaChaPoly_SHA256");
-
-    check_handshake_protocol("Noise_KN_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_KK_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_KX_25519_ChaChaPoly_SHA256");
-
-    check_handshake_protocol("Noise_IN_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_IK_25519_ChaChaPoly_SHA256");
-    check_handshake_protocol("Noise_IX_25519_ChaChaPoly_SHA256");
+    static const char * const patterns[] = {
+        "N", "K", "X", "NN", "NK", "NX", "XN", "XK", "XX",
+        "KN", "KK", "KX", "IN", "IK", "IX"
+    };
+    /* Static because data_name keeps pointing here after the loop */
+    static char name[NOISE_MAX_PROTOCOL_NAME];
+    size_t index;
+    for (index = 0; index < sizeof(patterns) / sizeof(patterns[0]); ++index) {
+        int len = snprintf(name, sizeof(name), "Noise_%s_25519_ChaChaPoly_SHA256",
+                           patterns[index]);
+        verify(len > 0 && (size_t)len < sizeof(name));
+        check_handshake_protocol(name);
+    }
 }
 
 /* Check that "IK" correctly falls back to "XXfallback" */
 static void check_fallback_protocol
-    (const char *label, const char *name, int fallback_anyway,
-     int trial_initiator_decrypt)
+    (const char *label, int fallback_anyway, int trial_initiator_decrypt)
 {
+    const char *name = "Noise_IK_25519_ChaChaPoly_SHA256";
     NoiseHandshakeState *initiator;
     NoiseHandshakeState *responder;
     NoiseDHState *dh;
@@ -537,12 +531,9 @@ static void check_fallback_protocol
 
 static void handshakestate_check_fallback(void)
 {
-    check_fallback_protocol("IK to XXfallback",
-                            "Noise_IK_25519_ChaChaPoly_SHA256", 0, 0);
-    check_fallback_protocol("IK to XXfallback, responder falls back anyway",
-                            "Noise_IK_25519_ChaChaPoly_SHA256", 1, 0);
-    check_fallback_protocol("IK to XXfallback, initiator trial decrypt",
-                            "Noise_IK_25519_ChaChaPoly_SHA256", 0, 1);
+    check_fallback_protocol("IK to XXfallback", 0, 0);
+    check_fallback_protocol("IK to XXfallback, responder falls back anyway", 1, 0);
+    check_fallback_protocol("IK to XXfallback, initiator trial decrypt", 0, 1);
 }
 
 static void handshakestate_check_errors(void)

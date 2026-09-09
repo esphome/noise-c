@@ -21,7 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#if NOISE_USE_LIBSODIUM
+#include "protocol/internal.h"
+
+#if NOISE_USE_SODIUM_RAND
 #include <sodium.h>
 
 /**
@@ -30,7 +32,7 @@
  */
 
 /**
- * \brief Gets cryptographically-strong random bytes from the operating system.
+ * \brief Gets cryptographically-strong random bytes from libsodium's generator.
  *
  * \param bytes The buffer to fill with random bytes.
  * \param size The number of random bytes to obtain.
@@ -45,4 +47,4 @@ void noise_rand_bytes(void *bytes, size_t size)
 }
 
 
-#endif  // NOISE_USE_LIBSODIUM
+#endif  // NOISE_USE_SODIUM_RAND

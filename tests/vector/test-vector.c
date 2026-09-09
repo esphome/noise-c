@@ -41,6 +41,7 @@ typedef struct
     char *protocol_name;            /**< Full name of the protocol */
     char *pattern;                  /**< Pattern spelled out by the noise-c files */
     char *dh;                       /**< DH algorithm spelled out by the noise-c files */
+    char *hybrid;                   /**< Hybrid DH algorithm spelled out by the noise-c files */
     char *cipher;                   /**< Cipher spelled out by the noise-c files */
     char *hash;                     /**< Hash spelled out by the noise-c files */
     uint8_t *init_static;           /**< Initiator's static private key */
@@ -96,6 +97,7 @@ static void test_vector_free(TestVector *vec)
     free_field(protocol_name);
     free_field(pattern);
     free_field(dh);
+    free_field(hybrid);
     free_field(cipher);
     free_field(hash);
     free_field(init_static);
@@ -196,6 +198,103 @@ static void dump_block(uint8_t *block, size_t len)
         } \
     } while (0)
 
+/* Every algorithm the name table gates on a build flag; a vector naming one
+   that is off is skipped, any other unknown name is a failure */
+static const struct {
+    const char *name;
+    int category;
+    int built;
+} algorithms[] = {
+    {"25519", NOISE_DH_CATEGORY, NOISE_USE_CURVE25519},
+    {"448", NOISE_DH_CATEGORY, NOISE_USE_CURVE448},
+    {"NewHope", NOISE_DH_CATEGORY, NOISE_USE_NEWHOPE},
+    {"ChaChaPoly", NOISE_CIPHER_CATEGORY, NOISE_USE_CHACHAPOLY},
+    {"AESGCM", NOISE_CIPHER_CATEGORY, NOISE_USE_AES},
+    {"SHA256", NOISE_HASH_CATEGORY, NOISE_USE_SHA256},
+    {"BLAKE2s", NOISE_HASH_CATEGORY, NOISE_USE_BLAKE2S},
+    {"BLAKE2b", NOISE_HASH_CATEGORY, NOISE_USE_BLAKE2B},
+    {"SHA512", NOISE_HASH_CATEGORY, NOISE_USE_SHA512},
+};
+
+/* True when the token is an algorithm of this category that a build flag
+   turned off */
+static int absent_algorithm(const char *token, size_t len, int category)
+{
+    size_t index;
+    for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
+        if (!algorithms[index].built &&
+                algorithms[index].category == category &&
+                strlen(algorithms[index].name) == len &&
+                !memcmp(token, algorithms[index].name, len))
+            return 1;
+    }
+    return 0;
+}
+
+/* Checks one algorithm field of a protocol name: every token must be known
+   in the category or absent, and only the DH field may join two with "+";
+   counts the absent ones */
+static int check_algorithm_field
+    (const char *field, size_t len, int category, int *absent)
+{
+    const char *end = field + len;
+    int tokens = 0;
+    while (field < end) {
+        const char *plus = memchr(field, '+', (size_t)(end - field));
+        size_t token_len = plus ? (size_t)(plus - field) : (size_t)(end - field);
+        if (token_len == 0 || ++tokens > 2 ||
+                (plus && (category != NOISE_DH_CATEGORY || plus + 1 == end)))
+            return 0;
+        if (absent_algorithm(field, token_len, category)) {
+            ++(*absent);
+        } else if (!noise_name_to_id(category, field, token_len)) {
+            return 0;
+        }
+        if (!plus)
+            break;
+        field = plus + 1;
+    }
+    return 1;
+}
+
+/* A vector may be skipped only when its protocol name is well formed and
+   the only parts the library does not know are algorithms a build flag
+   turned off; a misspelt name is a failure even if it also names one */
+static int skippable_protocol(const char *protocol_name)
+{
+    static const int categories[3] = {
+        NOISE_DH_CATEGORY, NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY
+    };
+    const char *fields[4];
+    size_t lens[4];
+    const char *start = protocol_name;
+    int ids[NOISE_MAX_MODIFIER_IDS + 1];
+    int absent = 0;
+    int index;
+    if (strncmp(start, "Noise_", 6) != 0)
+        return 0;
+    start += 6;
+    for (index = 0; index < 4; ++index) {
+        const char *end = strchr(start, '_');
+        if (index == 3 ? end != NULL : end == NULL)
+            return 0;
+        fields[index] = start;
+        lens[index] = end ? (size_t)(end - start) : strlen(start);
+        if (end)
+            start = end + 1;
+    }
+    if (noise_name_list_to_ids(ids, sizeof(ids) / sizeof(ids[0]),
+                               fields[0], lens[0], NOISE_PATTERN_CATEGORY,
+                               NOISE_MODIFIER_CATEGORY) <= 0)
+        return 0;
+    for (index = 0; index < 3; ++index) {
+        if (!check_algorithm_field(fields[index + 1], lens[index + 1],
+                                   categories[index], &absent))
+            return 0;
+    }
+    return absent > 0;
+}
+
 /**
  * \brief Tests the parsing of the protocol name into components.
  *
@@ -208,8 +307,9 @@ static int test_name_parsing(const TestVector *vec)
     NoiseProtocolId id;
     int err = noise_protocol_name_to_id
                 (&id, vec->protocol_name, strlen(vec->protocol_name));
-    if (err == NOISE_ERROR_UNKNOWN_NAME)
-        skip();  /* an algorithm this build leaves out */
+    if (err == NOISE_ERROR_UNKNOWN_NAME &&
+            skippable_protocol(vec->protocol_name))
+        skip();
     compare(err, NOISE_ERROR_NONE);
     compare(id.prefix_id, NOISE_PREFIX_STANDARD);
     return id.pattern_id == NOISE_PATTERN_N ||
@@ -486,17 +586,13 @@ static void test_connection(const TestVector *vec, int is_one_way)
     compare(noise_cipherstate_free(c2resp), NOISE_ERROR_NONE);
 }
 
-/* Per file, reported and reset by process_test_vectors() */
-static int tests_run = 0;
-static int tests_skipped = 0;
-
 /**
  * \brief Runs a fully parsed test vector.
  *
  * \param reader The input stream, for error reporting.
  * \param vec The test vector.
  *
- * \return Non-zero if the test succeeded, zero if it failed.
+ * \return 1 if the test succeeded, 2 if it was skipped, 0 if it failed.
  */
 static int test_vector_run(JSONReader *reader, const TestVector *vec)
 {
@@ -507,15 +603,12 @@ static int test_vector_run(JSONReader *reader, const TestVector *vec)
         int is_one_way = test_name_parsing(vec);
         test_connection(vec, is_one_way);
         printf("ok\n");
-        ++tests_run;
         return 1;
     } else if (value == 2) {
         printf("skipped\n");
-        ++tests_skipped;
-        return 1;
+        return 2;
     } else {
         printf("-> test data at %s:%ld\n", reader->filename, vec->line_number);
-        ++tests_run;
         return 0;
     }
 }
@@ -705,12 +798,13 @@ static size_t parse_psk_list(JSONReader *reader, uint8_t psks[MAX_PSKS][32])
  *
  * \param reader The reader representing the input stream.
  *
- * \return Non-zero if the test succeeded, zero if it failed.
+ * \return 1 if the test succeeded, 2 if it was skipped, 0 if it failed.
  */
 static int process_test_vector(JSONReader *reader)
 {
     TestVector vec;
-    int retval = 1;
+    int retval = 0;
+    int spelled;
     memset(&vec, 0, sizeof(TestVector));
     vec.line_number = reader->line_number;
     while (!reader->errors && reader->token == JSON_TOKEN_STRING) {
@@ -722,6 +816,8 @@ static int process_test_vector(JSONReader *reader)
             expect_string_field(reader, &(vec.pattern));
         } else if (json_is_name(reader, "dh")) {
             expect_string_field(reader, &(vec.dh));
+        } else if (json_is_name(reader, "hybrid")) {
+            expect_string_field(reader, &(vec.hybrid));
         } else if (json_is_name(reader, "cipher")) {
             expect_string_field(reader, &(vec.cipher));
         } else if (json_is_name(reader, "hash")) {
@@ -813,23 +909,26 @@ static int process_test_vector(JSONReader *reader)
             json_error(reader, "Unknown field '%s'", reader->str_value);
         }
     }
-    if ((vec.pattern || vec.dh || vec.cipher || vec.hash) &&
-            !(vec.pattern && vec.dh && vec.cipher && vec.hash)) {
-        json_error(reader, "pattern, dh, cipher and hash must all be given");
-    } else if (vec.pattern && vec.dh && vec.cipher && vec.hash) {
+    spelled = !!vec.pattern + !!vec.dh + !!vec.cipher + !!vec.hash;
+    if (spelled == 4) {
         /* The noise-c files spell out the protocol the handshake starts
            with; in the fallback file "name" is the one it ends on */
-        char spelled[NOISE_MAX_PROTOCOL_NAME];
-        int len = snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
-                           vec.pattern, vec.dh, vec.cipher, vec.hash);
-        if (len < 0 || (size_t)len >= sizeof(spelled)) {
+        char buf[NOISE_MAX_PROTOCOL_NAME];
+        int len = snprintf(buf, sizeof(buf), "Noise_%s_%s%s%s_%s_%s",
+                           vec.pattern, vec.dh, vec.hybrid ? "+" : "",
+                           vec.hybrid ? vec.hybrid : "", vec.cipher, vec.hash);
+        if (len < 0 || (size_t)len >= sizeof(buf)) {
             json_error(reader, "Protocol name is too long");
+        } else if (vec.name && !vec.fallback && strcmp(buf, vec.name) != 0) {
+            json_error(reader, "The spelled out fields do not match 'name'");
         } else {
             free(vec.protocol_name);
-            vec.protocol_name = strdup(spelled);
+            vec.protocol_name = strdup(buf);
             if (!vec.protocol_name)
                 json_error(reader, "Out of memory");
         }
+    } else if (spelled || vec.hybrid) {
+        json_error(reader, "pattern, dh, cipher and hash must all be given");
     }
     if (!vec.protocol_name) {
         if (!reader->errors)
@@ -851,11 +950,11 @@ static int process_test_vector(JSONReader *reader)
  *
  * \param reader The reader representing the input stream.
  */
-static void process_test_vectors(JSONReader *reader, int expected_run)
+static void process_test_vectors(JSONReader *reader, int *total_run)
 {
     int ok = 1;
-    tests_run = 0;
-    tests_skipped = 0;
+    int run = 0;
+    int skipped = 0;
     printf("--------------------------------------------------------------\n");
     printf("Processing vectors from %s\n", reader->filename);
     json_next_token(reader);
@@ -864,8 +963,14 @@ static void process_test_vectors(JSONReader *reader, int expected_run)
     expect_token(reader, JSON_TOKEN_LSQUARE, "[");
     while (!reader->errors && reader->token != JSON_TOKEN_RSQUARE) {
         expect_token(reader, JSON_TOKEN_LBRACE, "{");
-        if (!process_test_vector(reader))
-            ok = 0;
+        int result = process_test_vector(reader);
+        if (result == 2) {
+            ++skipped;
+        } else {
+            ++run;
+            if (!result)
+                ok = 0;
+        }
         expect_token(reader, JSON_TOKEN_RBRACE, "}");
         if (!reader->errors && reader->token == JSON_TOKEN_COMMA)
             expect_token(reader, JSON_TOKEN_COMMA, ",");
@@ -874,28 +979,26 @@ static void process_test_vectors(JSONReader *reader, int expected_run)
     expect_token(reader, JSON_TOKEN_RBRACE, "}");
     expect_token(reader, JSON_TOKEN_END, "EOF");
     printf("--------------------------------------------------------------\n");
-    printf("%d vectors run, %d skipped as not in this build\n",
-           tests_run, tests_skipped);
-    if (tests_run < expected_run) {
-        /* A broken name table would skip everything and look green */
-        printf("only %d of at least %d expected vectors ran\n",
-               tests_run, expected_run);
+    printf("%d vectors run, %d skipped as not in this build\n", run, skipped);
+    if (run + skipped == 0) {
+        printf("no vectors were found in this file\n");
         ok = 0;
     }
+    *total_run += run;
     if (!ok) {
         /* Some of the test vectors failed, so report a global failure */
         ++(reader->errors);
     }
 }
 
-static int process_file(const char *filename, int expected_run)
+static int process_file(const char *filename, int *total_run)
 {
     int retval = 0;
     FILE *file = fopen(filename, "r");
     if (file) {
         JSONReader reader;
         json_init(&reader, filename, file);
-        process_test_vectors(&reader, expected_run);
+        process_test_vectors(&reader, total_run);
         if (reader.errors > 0)
             retval = 1;
         json_free(&reader);
@@ -914,35 +1017,36 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    const char *progname = argv[0];
     int retval = 0;
-    int expected_run = 0;
-    int files = 0;
-    while (argc > 1) {
-        if (!strcmp(argv[1], "--expect") && argc > 2) {
-            expected_run = atoi(argv[2]);
-            if (expected_run <= 0) {
-                fprintf(stderr, "--expect needs a positive count\n");
-                return 1;
-            }
-            argc -= 2;
-            argv += 2;
-            continue;
-        }
-        if (!expected_run) {
-            /* Every file states its own floor, so a new one cannot go unguarded */
-            fprintf(stderr, "%s needs --expect N before it\n", argv[1]);
+    int total_run = 0;
+    size_t index;
+    /* The table above must agree with the library's own name table, or a
+       wrong flag on an entry would turn runnable vectors into silent skips */
+    for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
+        int known = noise_name_to_id(algorithms[index].category,
+                                     algorithms[index].name,
+                                     strlen(algorithms[index].name)) != 0;
+        if (known != (algorithms[index].built != 0)) {
+            fprintf(stderr, "%s: the skip table says %s but the library %s it\n",
+                    algorithms[index].name,
+                    algorithms[index].built ? "built" : "absent",
+                    known ? "knows" : "lacks");
             return 1;
         }
-        retval |= process_file(argv[1], expected_run);
-        expected_run = 0;
-        ++files;
+    }
+    if (argc <= 1) {
+        fprintf(stderr, "Usage: %s vectors1.txt vectors2.txt ...\n", argv[0]);
+        return 1;
+    }
+    while (argc > 1) {
+        retval |= process_file(argv[1], &total_run);
         --argc;
         ++argv;
     }
-    if (!files) {
-        fprintf(stderr, "Usage: %s --expect N vectors1.txt [--expect N vectors2.txt ...]\n", progname);
-        return 1;
+    if (!total_run) {
+        /* Every file skipping everything would otherwise look green */
+        printf("no vectors ran in any file\n");
+        retval = 1;
     }
     return retval;
 }

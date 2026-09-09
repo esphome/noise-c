@@ -4,8 +4,16 @@
 #define NOISE_USE_AES 0
 #endif
 
-#ifndef NOISE_USE_CRUVE25519
+#ifndef NOISE_USE_CURVE25519
 #define NOISE_USE_CURVE25519 1
+#endif
+
+#ifndef NOISE_USE_CURVE448
+#define NOISE_USE_CURVE448 0
+#endif
+
+#ifndef NOISE_USE_NEWHOPE
+#define NOISE_USE_NEWHOPE 0
 #endif
 
 #ifndef NOISE_USE_BLAKE2B
@@ -52,6 +60,12 @@
 
 #ifndef NOISE_USE_CUSTOM_RAND
 #define NOISE_USE_CUSTOM_RAND 1
+#endif
+
+/* Where noise_rand_bytes() comes from when it is not custom: libsodium's
+   generator with that backend, otherwise the operating system */
+#ifndef NOISE_USE_SODIUM_RAND
+#define NOISE_USE_SODIUM_RAND (NOISE_USE_LIBSODIUM && !NOISE_USE_CUSTOM_RAND)
 #endif
 
 #if NOISE_USE_REFERENCE_BACKEND
