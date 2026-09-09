@@ -92,13 +92,19 @@ int noise_protocol_id_to_name
     if (id->prefix_id != NOISE_PREFIX_STANDARD ||
             id->pattern_id != NOISE_PATTERN_NN ||
             id->modifier_ids[0] != NOISE_MODIFIER_PSK0 ||
-            id->modifier_ids[1] != NOISE_MODIFIER_NONE ||
             id->dh_id != NOISE_DH_CURVE25519 ||
             id->cipher_id != NOISE_CIPHER_CHACHAPOLY ||
             id->hash_id != NOISE_HASH_SHA256 ||
             id->hybrid_id != NOISE_DH_NONE) {
         *name = '\0';
         return NOISE_ERROR_UNKNOWN_ID;
+    }
+    /* psk0 is the only modifier; every other slot must be empty */
+    for (slot = 1; slot < NOISE_MAX_MODIFIER_IDS; ++slot) {
+        if (id->modifier_ids[slot] != NOISE_MODIFIER_NONE) {
+            *name = '\0';
+            return NOISE_ERROR_UNKNOWN_ID;
+        }
     }
     for (slot = 0; slot < sizeof(id->reserved) / sizeof(id->reserved[0]); ++slot) {
         if (id->reserved[slot]) {

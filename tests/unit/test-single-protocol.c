@@ -100,9 +100,11 @@ void test_single_protocol(void)
     id.modifier_ids[0] = NOISE_MODIFIER_NONE;
     expect_unknown_id(&id);
     id.modifier_ids[0] = NOISE_MODIFIER_PSK0;
-    id.modifier_ids[1] = NOISE_MODIFIER_PSK1;
-    expect_unknown_id(&id);
-    id.modifier_ids[1] = NOISE_MODIFIER_NONE;
+    for (size_t slot = 1; slot < NOISE_MAX_MODIFIER_IDS; slot++) {
+        id.modifier_ids[slot] = NOISE_MODIFIER_PSK1;
+        expect_unknown_id(&id);
+        id.modifier_ids[slot] = NOISE_MODIFIER_NONE;
+    }
     id.hybrid_id = NOISE_DH_CURVE25519;
     expect_unknown_id(&id);
     id.hybrid_id = NOISE_DH_NONE;
