@@ -273,7 +273,8 @@ static int skippable_protocol(const char *protocol_name)
             return 0;
         fields[index] = start;
         lens[index] = end ? (size_t)(end - start) : strlen(start);
-        start = end + 1;
+        if (end)
+            start = end + 1;
     }
     if (noise_name_list_to_ids(ids, sizeof(ids) / sizeof(ids[0]),
                                fields[0], lens[0], NOISE_PATTERN_CATEGORY,
