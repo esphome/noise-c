@@ -41,13 +41,19 @@
 /* On the ESP8266 read only data sits in DRAM unless it is asked to live in
    flash, so the name is kept there and read through the pgmspace helpers.
    Everywhere else those are plain memcpy and memcmp. */
-#if (defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)) && \
-    defined(__has_include) && __has_include(<pgmspace.h>)
+#if defined(ESP8266) || defined(ARDUINO_ARCH_ESP8266)
+/* Nested on purpose: #if parses both sides of an &&, so a preprocessor
+   without __has_include cannot be spared by defined() in front of it */
+#ifdef __has_include
+#if __has_include(<pgmspace.h>)
 #include <pgmspace.h>
 #define NOISE_NAME_IN_FLASH PROGMEM
 #define noise_name_copy(dst, src, len) memcpy_P((dst), (src), (len))
 #define noise_name_cmp(str, name, len) memcmp_P((str), (name), (len))
-#else
+#endif
+#endif
+#endif
+#ifndef NOISE_NAME_IN_FLASH
 #define NOISE_NAME_IN_FLASH
 #define noise_name_copy(dst, src, len) memcpy((dst), (src), (len))
 #define noise_name_cmp(str, name, len) memcmp((str), (name), (len))
