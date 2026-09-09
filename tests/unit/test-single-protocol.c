@@ -26,9 +26,13 @@
 
 #include "test-helpers.h"
 
-/* The reduced implementations, built a second time under the names below */
+/* The reduced implementations, built a second time under the names below.
+   Its configuration guard wants fallback off as well, as the small build
+   has it; that changes nothing else in this file */
 #undef NOISE_USE_PROTOCOL_NAME_TABLE
 #define NOISE_USE_PROTOCOL_NAME_TABLE 0
+#undef NOISE_USE_FALLBACK
+#define NOISE_USE_FALLBACK 0
 #define noise_protocol_id_to_name single_id_to_name
 #define noise_protocol_name_to_id single_name_to_id
 #include "protocol/names-single.c"
