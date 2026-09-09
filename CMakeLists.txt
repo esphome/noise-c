@@ -143,6 +143,8 @@ else()
         "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
         "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt"
         "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-fallback.txt"
+        # Every hybrid vector needs 448 or NewHope, so this file only checks
+        # that its names parse and match; it runs none by design
         "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-hybrid.txt")
   endif()
 endif()

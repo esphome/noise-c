@@ -202,25 +202,28 @@ static void dump_block(uint8_t *block, size_t len)
    that is off is skipped, any other unknown name is a failure */
 static const struct {
     const char *name;
+    int category;
     int built;
 } algorithms[] = {
-    {"25519", NOISE_USE_CURVE25519},
-    {"448", NOISE_USE_CURVE448},
-    {"NewHope", NOISE_USE_NEWHOPE},
-    {"ChaChaPoly", NOISE_USE_CHACHAPOLY},
-    {"AESGCM", NOISE_USE_AES},
-    {"SHA256", NOISE_USE_SHA256},
-    {"BLAKE2s", NOISE_USE_BLAKE2S},
-    {"BLAKE2b", NOISE_USE_BLAKE2B},
-    {"SHA512", NOISE_USE_SHA512},
+    {"25519", NOISE_DH_CATEGORY, NOISE_USE_CURVE25519},
+    {"448", NOISE_DH_CATEGORY, NOISE_USE_CURVE448},
+    {"NewHope", NOISE_DH_CATEGORY, NOISE_USE_NEWHOPE},
+    {"ChaChaPoly", NOISE_CIPHER_CATEGORY, NOISE_USE_CHACHAPOLY},
+    {"AESGCM", NOISE_CIPHER_CATEGORY, NOISE_USE_AES},
+    {"SHA256", NOISE_HASH_CATEGORY, NOISE_USE_SHA256},
+    {"BLAKE2s", NOISE_HASH_CATEGORY, NOISE_USE_BLAKE2S},
+    {"BLAKE2b", NOISE_HASH_CATEGORY, NOISE_USE_BLAKE2B},
+    {"SHA512", NOISE_HASH_CATEGORY, NOISE_USE_SHA512},
 };
 
-/* True when the token is an algorithm a build flag turned off */
-static int absent_algorithm(const char *token, size_t len)
+/* True when the token is an algorithm of this category that a build flag
+   turned off */
+static int absent_algorithm(const char *token, size_t len, int category)
 {
     size_t index;
     for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
         if (!algorithms[index].built &&
+                algorithms[index].category == category &&
                 strlen(algorithms[index].name) == len &&
                 !memcmp(token, algorithms[index].name, len))
             return 1;
@@ -235,13 +238,14 @@ static int check_algorithm_field
     (const char *field, size_t len, int category, int *absent)
 {
     const char *end = field + len;
+    int tokens = 0;
     while (field < end) {
         const char *plus = memchr(field, '+', (size_t)(end - field));
         size_t token_len = plus ? (size_t)(plus - field) : (size_t)(end - field);
-        if (token_len == 0 || (plus && (category != NOISE_DH_CATEGORY ||
-                                        plus + 1 == end)))
+        if (token_len == 0 || ++tokens > 2 ||
+                (plus && (category != NOISE_DH_CATEGORY || plus + 1 == end)))
             return 0;
-        if (absent_algorithm(field, token_len)) {
+        if (absent_algorithm(field, token_len, category)) {
             ++(*absent);
         } else if (!noise_name_to_id(category, field, token_len)) {
             return 0;
@@ -262,7 +266,7 @@ static int skippable_protocol(const char *protocol_name)
     const char *fields[4];
     size_t lens[4];
     const char *start = protocol_name;
-    int ids[16];
+    int ids[NOISE_MAX_MODIFIER_IDS + 1];
     int absent = 0;
     int index;
     if (strncmp(start, "Noise_", 6) != 0)
@@ -913,6 +917,8 @@ static int process_test_vector(JSONReader *reader)
                            vec.hybrid ? vec.hybrid : "", vec.cipher, vec.hash);
         if (len < 0 || (size_t)len >= sizeof(buf)) {
             json_error(reader, "Protocol name is too long");
+        } else if (vec.name && !vec.fallback && strcmp(buf, vec.name) != 0) {
+            json_error(reader, "The spelled out fields do not match 'name'");
         } else {
             free(vec.protocol_name);
             vec.protocol_name = strdup(buf);

@@ -355,7 +355,8 @@ static void handshakestate_check_protocols(void)
         "N", "K", "X", "NN", "NK", "NX", "XN", "XK", "XX",
         "KN", "KK", "KX", "IN", "IK", "IX"
     };
-    char name[NOISE_MAX_PROTOCOL_NAME];
+    /* Static because data_name keeps pointing here after the loop */
+    static char name[NOISE_MAX_PROTOCOL_NAME];
     size_t index;
     for (index = 0; index < sizeof(patterns) / sizeof(patterns[0]); ++index) {
         int len = snprintf(name, sizeof(name), "Noise_%s_25519_ChaChaPoly_SHA256",
