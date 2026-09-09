@@ -226,16 +226,14 @@ static void check_dh(int id, size_t private_key_len, size_t public_key_len,
     verify(!memcmp(temp, share_key, shared_key_len));
 
     /* Deliberately null the other public key and check for a null result */
-    if (id == NOISE_DH_CURVE25519) {
-        compare(noise_dhstate_set_null_public_key(state2), NOISE_ERROR_NONE);
-        verify(noise_dhstate_is_null_public_key(state2));
-        verify(noise_dhstate_has_public_key(state2));
-        memset(temp, 0xAA, sizeof(temp));
-        compare(noise_dhstate_calculate(state1, state2, temp, shared_key_len),
-                NOISE_ERROR_NONE);
-        memset(temp2, 0, sizeof(temp));
-        verify(!memcmp(temp, temp2, shared_key_len));
-    }
+    compare(noise_dhstate_set_null_public_key(state2), NOISE_ERROR_NONE);
+    verify(noise_dhstate_is_null_public_key(state2));
+    verify(noise_dhstate_has_public_key(state2));
+    memset(temp, 0xAA, sizeof(temp));
+    compare(noise_dhstate_calculate(state1, state2, temp, shared_key_len),
+            NOISE_ERROR_NONE);
+    memset(temp2, 0, sizeof(temp));
+    verify(!memcmp(temp, temp2, shared_key_len));
 
     /* Clear the first key and check that it returns to default properties */
     compare(noise_dhstate_clear_key(state1), NOISE_ERROR_NONE);
@@ -249,30 +247,28 @@ static void check_dh(int id, size_t private_key_len, size_t public_key_len,
             NOISE_ERROR_NONE);
 
     /* Deliberately mess up the first keypair and perform validation.
-       The existing Curve25519 and Curve448 back ends validate the
-       public key but all private key values are valid. */
-    if (id == NOISE_DH_CURVE25519) {
-        priv_key[private_key_len / 2] ^= 0x01;
-        compare(noise_dhstate_set_keypair
-                    (state1, priv_key, private_key_len,
-                     pub_key, public_key_len),
-                NOISE_ERROR_INVALID_PUBLIC_KEY);
-        priv_key[private_key_len / 2] ^= 0x01;
-        compare(noise_dhstate_set_keypair
-                    (state1, priv_key, private_key_len,
-                     pub_key, public_key_len),
-                NOISE_ERROR_NONE);
-        pub_key[public_key_len / 2] ^= 0x01;
-        compare(noise_dhstate_set_keypair
-                    (state1, priv_key, private_key_len,
-                     pub_key, public_key_len),
-                NOISE_ERROR_INVALID_PUBLIC_KEY);
-        pub_key[public_key_len / 2] ^= 0x01;
-        compare(noise_dhstate_set_keypair
-                    (state1, priv_key, private_key_len,
-                     pub_key, public_key_len),
-                NOISE_ERROR_NONE);
-    }
+       The Curve25519 back end validates the public key but
+       all private key values are valid. */
+    priv_key[private_key_len / 2] ^= 0x01;
+    compare(noise_dhstate_set_keypair
+                (state1, priv_key, private_key_len,
+                 pub_key, public_key_len),
+            NOISE_ERROR_INVALID_PUBLIC_KEY);
+    priv_key[private_key_len / 2] ^= 0x01;
+    compare(noise_dhstate_set_keypair
+                (state1, priv_key, private_key_len,
+                 pub_key, public_key_len),
+            NOISE_ERROR_NONE);
+    pub_key[public_key_len / 2] ^= 0x01;
+    compare(noise_dhstate_set_keypair
+                (state1, priv_key, private_key_len,
+                 pub_key, public_key_len),
+            NOISE_ERROR_INVALID_PUBLIC_KEY);
+    pub_key[public_key_len / 2] ^= 0x01;
+    compare(noise_dhstate_set_keypair
+                (state1, priv_key, private_key_len,
+                 pub_key, public_key_len),
+            NOISE_ERROR_NONE);
 
     /* Clean up */
     compare(noise_dhstate_free(state1), NOISE_ERROR_NONE);

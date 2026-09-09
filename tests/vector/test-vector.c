@@ -37,6 +37,10 @@ typedef struct
     long line_number;               /**< Line number for the "name" */
     char *name;                     /**< Full name of the test case */
     char *protocol_name;            /**< Full name of the protocol */
+    char *pattern;                  /**< Pattern spelled out by the noise-c files */
+    char *dh;                       /**< DH algorithm spelled out by the noise-c files */
+    char *cipher;                   /**< Cipher spelled out by the noise-c files */
+    char *hash;                     /**< Hash spelled out by the noise-c files */
     uint8_t *init_static;           /**< Initiator's static private key */
     size_t init_static_len;         /**< Length of init_static in bytes */
     uint8_t *init_public_static;    /**< Initiator's public key known to responder */
@@ -88,6 +92,10 @@ static void test_vector_free(TestVector *vec)
     #define free_field(name) do { if (vec->name) free(vec->name); } while (0)
     free_field(name);
     free_field(protocol_name);
+    free_field(pattern);
+    free_field(dh);
+    free_field(cipher);
+    free_field(hash);
     free_field(init_static);
     free_field(init_public_static);
     free_field(resp_static);
@@ -708,15 +716,14 @@ static int process_test_vector(JSONReader *reader)
         } else if (json_is_name(reader, "protocol_name")) {
             vec.line_number = reader->line_number;
             expect_string_field(reader, &(vec.protocol_name));
-        } else if (json_is_name(reader, "pattern") ||
-                   json_is_name(reader, "dh") ||
-                   json_is_name(reader, "cipher") ||
-                   json_is_name(reader, "hash")) {
-            /* The noise-c vector files spell the protocol out field by
-               field as well as in "name"; the name is what gets used */
-            char *ignored = 0;
-            expect_string_field(reader, &ignored);
-            free(ignored);
+        } else if (json_is_name(reader, "pattern")) {
+            expect_string_field(reader, &(vec.pattern));
+        } else if (json_is_name(reader, "dh")) {
+            expect_string_field(reader, &(vec.dh));
+        } else if (json_is_name(reader, "cipher")) {
+            expect_string_field(reader, &(vec.cipher));
+        } else if (json_is_name(reader, "hash")) {
+            expect_string_field(reader, &(vec.hash));
         } else if (json_is_name(reader, "init_static")) {
             vec.init_static_len =
                 expect_binary_field(reader, &(vec.init_static));
@@ -817,6 +824,18 @@ static int process_test_vector(JSONReader *reader)
         vec.name = strdup(vec.protocol_name);
         if (!vec.name)
             json_error(reader, "Out of memory");
+    }
+    if (!reader->errors && vec.pattern && vec.dh && vec.cipher && vec.hash) {
+        /* The noise-c files also spell the protocol out field by field;
+           the fallback file names the protocol the handshake ends on, not
+           the one it starts with, so refuse rather than run the wrong one */
+        char spelled[NOISE_MAX_PROTOCOL_NAME];
+        snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
+                 vec.pattern, vec.dh, vec.cipher, vec.hash);
+        if (strcmp(spelled, vec.protocol_name) != 0) {
+            json_error(reader, "'name' %s does not match the fields %s",
+                       vec.protocol_name, spelled);
+        }
     }
     if (!reader->errors) {
         retval = test_vector_run(reader, &vec);

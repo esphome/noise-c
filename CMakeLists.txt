@@ -45,6 +45,7 @@ if(ESP_PLATFORM)
   )
 else()
   cmake_minimum_required(VERSION 3.13)
+  project(noise_c C)
 
   option(NOISE_C_BUILD_TESTS "Build the unit and vector tests" OFF)
   option(NOISE_C_FIND_LIBSODIUM

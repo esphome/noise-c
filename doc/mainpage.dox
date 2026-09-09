@@ -78,7 +78,6 @@ page on the Noise wiki.
 
 \section other_info Other information
 
-\li \ref example_echo "Using Noise-C: Client/Server Echo Example"
 \li \ref cert_key_format "Certificate and private key file format"
 
 \section dir_structure Directory structure
@@ -97,16 +96,10 @@ page on the Noise wiki.
     reference cryptographic primitives.
 \li <tt>src/backend/openssl/</tt> - OpenSSL crypto backend
 \li <tt>src/backend/sodium/</tt> - libsodium crypto backend
-\li <tt>tools/protoc/</tt> - Source code for the Noise-C protobufs compiler.
-\li <tt>tools/keytool/</tt> - Command-line key and certificate management tool.
 \li <tt>tests/unit/</tt> - Unit tests to exercise the library's functionality.
 \li <tt>tests/vector/</tt> - Public JSON test vectors and test harness for
     the Noise protocol.
-\li <tt>tests/vector-gen/</tt> - Generates test vectors in JSON format.
-\li <tt>tests/performance/</tt> - Performance tests for the cryptographic
-    primitives.
-\li <tt>examples/</tt> - Source code for examples.
-\li <tt>doc/</tt> - Overview and example documentation.
+\li <tt>doc/</tt> - Overview documentation.
 
 \section building Building
 
