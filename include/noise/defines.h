@@ -56,7 +56,9 @@
 
 /* Where noise_rand_bytes() comes from when it is not custom: libsodium's
    generator with that backend, otherwise the operating system */
+#ifndef NOISE_USE_SODIUM_RAND
 #define NOISE_USE_SODIUM_RAND (NOISE_USE_LIBSODIUM && !NOISE_USE_CUSTOM_RAND)
+#endif
 
 #if NOISE_USE_REFERENCE_BACKEND
 

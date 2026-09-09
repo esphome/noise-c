@@ -740,7 +740,7 @@ static size_t parse_psk_list(JSONReader *reader, uint8_t psks[MAX_PSKS][32])
  *
  * \param reader The reader representing the input stream.
  *
- * \return Non-zero if the test succeeded, zero if it failed.
+ * \return 1 if the test succeeded, 2 if it was skipped, 0 if it failed.
  */
 static int process_test_vector(JSONReader *reader)
 {
