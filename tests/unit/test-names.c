@@ -148,6 +148,10 @@ static void check_name_list(const char *name, int error,
     compare(noise_name_list_to_ids(ids, MAX_IDS, name, 0,
                                    category1, category2),
             -NOISE_ERROR_UNKNOWN_NAME);
+    /* The cipher category is wrong for every name this test lists */
+    compare(noise_name_list_to_ids(ids, MAX_IDS, name, strlen(name),
+                                   NOISE_CIPHER_CATEGORY, category2),
+            -NOISE_ERROR_UNKNOWN_NAME);
     compare(noise_ids_to_name_list(0, sizeof(output_name),
                                    expected_ids, expected_ids_len,
                                    category1, category2),
@@ -164,6 +168,10 @@ static void check_name_list(const char *name, int error,
                                    expected_ids, 0,
                                    category1, category2),
             NOISE_ERROR_INVALID_PARAM);
+    compare(noise_ids_to_name_list(output_name, sizeof(output_name),
+                                   expected_ids, expected_ids_len,
+                                   NOISE_CIPHER_CATEGORY, category2),
+            NOISE_ERROR_UNKNOWN_ID);
     compare(noise_ids_to_name_list(output_name, 1,
                                    expected_ids, expected_ids_len,
                                    category1, category2),

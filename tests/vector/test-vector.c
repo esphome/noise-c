@@ -916,11 +916,10 @@ int main(int argc, char *argv[])
 
     const char *progname = argv[0];
     int retval = 0;
-    int expected_run = 1;
+    int expected_run = 0;
     int files = 0;
     while (argc > 1) {
         if (!strcmp(argv[1], "--expect") && argc > 2) {
-            /* Applies to the files that follow */
             expected_run = atoi(argv[2]);
             if (expected_run <= 0) {
                 fprintf(stderr, "--expect needs a positive count\n");
@@ -930,13 +929,19 @@ int main(int argc, char *argv[])
             argv += 2;
             continue;
         }
+        if (!expected_run) {
+            /* Every file states its own floor, so a new one cannot go unguarded */
+            fprintf(stderr, "%s needs --expect N before it\n", argv[1]);
+            return 1;
+        }
         retval |= process_file(argv[1], expected_run);
+        expected_run = 0;
         ++files;
         --argc;
         ++argv;
     }
     if (!files) {
-        fprintf(stderr, "Usage: %s [--expect N] vectors1.txt ...\n", progname);
+        fprintf(stderr, "Usage: %s --expect N vectors1.txt [--expect N vectors2.txt ...]\n", progname);
         return 1;
     }
     return retval;
