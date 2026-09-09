@@ -36,7 +36,8 @@ The crypto backend is a compile-time choice made through the `NOISE_USE_*`
 macros in `include/noise/defines.h`. The default backend is libsodium; if your
 project already defines a `sodium` target before `add_subdirectory()`, the
 generic build links against it automatically. Otherwise select the reference
-backend (or provide libsodium yourself) before building.
+backend, or configure with `-DNOISE_C_FIND_LIBSODIUM=ON` to find libsodium
+with pkg-config.
 
 Minimum CMake version for the generic target is 3.13.
 

@@ -95,29 +95,23 @@ page on the Noise wiki.
 
 \section building Building
 
-The library uses autoconf and automake for the Makefile structure.
-You will need to have these installed to build from the sources in the
-git repository.  Bison and Flex are also requred to build the
-<tt>noise-protoc</tt> protobuf compiler.
+The library builds with CMake. As an ESP-IDF component it is picked up
+by the component manager; any other CMake project can pull it in with
+<tt>add_subdirectory()</tt> and link <tt>esphome::noise_c</tt>. The crypto
+back end is chosen through the <tt>NOISE_USE_*</tt> macros in
+<tt>include/noise/defines.h</tt>; the default is libsodium.
 
-To build the library under GNU/Linux and run the tests, type the following:
+To build the library on a host and run the tests, type the following:
 
 \code
-$ autoreconf -i
-$ ./configure
-$ make
-$ make check
+$ cmake -S . -B build -DNOISE_C_BUILD_TESTS=ON
+$ cmake --build build
+$ ctest --test-dir build
 \endcode
 
-The following parameters can be supplied to <tt>configure</tt> to select
-other crypto back ends:
-
-\li <tt>--with-libsodium</tt> - Use libsodium to provide crypto primitives,
-falling back to the reference back end where libsodium does not have an
-implementation.
-\li <tt>--with-openssl</tt> - Use the AESGCM implementation from OpenSSL.
-
-Both options can be combined to get the best of both worlds.
+The tests need libsodium on the host, found with pkg-config.
+<tt>-DNOISE_C_FIND_LIBSODIUM=ON</tt> does the same lookup for a build
+without the tests.
 
 \section todo TODO
 

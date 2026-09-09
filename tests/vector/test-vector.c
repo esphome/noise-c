@@ -814,7 +814,10 @@ static int process_test_vector(JSONReader *reader)
             json_error(reader, "Unknown field '%s'", reader->str_value);
         }
     }
-    if (vec.pattern && vec.dh && vec.cipher && vec.hash) {
+    if ((vec.pattern || vec.dh || vec.cipher || vec.hash) &&
+            !(vec.pattern && vec.dh && vec.cipher && vec.hash)) {
+        json_error(reader, "pattern, dh, cipher and hash must all be given");
+    } else if (vec.pattern && vec.dh && vec.cipher && vec.hash) {
         /* The noise-c files spell out the protocol the handshake starts
            with; in the fallback file "name" is the one it ends on */
         char spelled[NOISE_MAX_PROTOCOL_NAME];

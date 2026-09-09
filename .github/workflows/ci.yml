@@ -29,7 +29,13 @@ jobs:
         run: cmake --build build --parallel
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error
-      - name: Build with the consumer defaults
+      - name: Build the library alone with pkg-config libsodium
         run: |
-          cmake -S . -B build-default -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
-          cmake --build build-default --parallel
+          cmake -S . -B build-lib -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build build-lib --parallel
+      - name: Build as a subdirectory of another project
+        run: |
+          mkdir -p "$RUNNER_TEMP/consumer"
+          printf 'cmake_minimum_required(VERSION 3.13)\nproject(consumer C)\nadd_subdirectory("%s" noise-c)\n' "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/consumer/CMakeLists.txt"
+          cmake -S "$RUNNER_TEMP/consumer" -B "$RUNNER_TEMP/consumer/build" -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build "$RUNNER_TEMP/consumer/build" --parallel
