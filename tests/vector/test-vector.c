@@ -1019,6 +1019,21 @@ int main(int argc, char *argv[])
 
     int retval = 0;
     int total_run = 0;
+    size_t index;
+    /* The table above must agree with the library's own name table, or a
+       wrong flag on an entry would turn runnable vectors into silent skips */
+    for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
+        int known = noise_name_to_id(algorithms[index].category,
+                                     algorithms[index].name,
+                                     strlen(algorithms[index].name)) != 0;
+        if (known != (algorithms[index].built != 0)) {
+            fprintf(stderr, "%s: the skip table says %s but the library %s it\n",
+                    algorithms[index].name,
+                    algorithms[index].built ? "built" : "absent",
+                    known ? "knows" : "lacks");
+            return 1;
+        }
+    }
     if (argc <= 1) {
         fprintf(stderr, "Usage: %s vectors1.txt vectors2.txt ...\n", argv[0]);
         return 1;
