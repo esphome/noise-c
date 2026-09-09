@@ -23,7 +23,9 @@
 #include <noise/protocol.h>
 #include "json-reader.h"
 #include <setjmp.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_MESSAGES 32
 #define MAX_MESSAGE_SIZE 4096

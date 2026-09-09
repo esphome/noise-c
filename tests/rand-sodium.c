@@ -26,6 +26,7 @@
 #include <noise/defines.h>
 #if NOISE_USE_CUSTOM_RAND
 #include <sodium.h>
+#include <stddef.h>
 
 void noise_rand_bytes(void *bytes, size_t size)
 {
