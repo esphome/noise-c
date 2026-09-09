@@ -25,7 +25,6 @@
 #include "noise/defines.h"
 #if NOISE_USE_MBEDTLS_SHA256_STATE
 #include "protocol/internal.h"
-#include <string.h>
 
 /* mbedTLS 4, which arrives with ESP-IDF 6, made the sha256 API private, so
    the hash is reached through PSA there. Everything below is written against
