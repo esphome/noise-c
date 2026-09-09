@@ -45,6 +45,13 @@ jobs:
           cmake -S . -B build-mbedtls -DNOISE_C_BUILD_TESTS=ON -DNOISE_C_FIND_LIBSODIUM=ON -DNOISE_C_MBEDTLS_SHA256=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
           cmake --build build-mbedtls --parallel
           ctest --test-dir build-mbedtls --output-on-failure --no-tests=error
+      - name: Test the same through PSA, the path mbedTLS 4 takes
+        if: matrix.libsodium == 'system'
+        run: |
+          cmake -S . -B build-psa -DNOISE_C_BUILD_TESTS=ON -DNOISE_C_FIND_LIBSODIUM=ON -DNOISE_C_MBEDTLS_SHA256=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_C_FLAGS=-DNOISE_SHA256_VIA_PSA
+          cmake --build build-psa --parallel
+          ctest --test-dir build-psa --output-on-failure --no-tests=error
       - name: Build the library alone with the tests off
         if: matrix.libsodium == 'system'
         run: |

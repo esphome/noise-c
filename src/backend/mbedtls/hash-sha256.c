@@ -66,9 +66,12 @@ static int noise_sha256_ctx_update
 
 static int noise_sha256_ctx_finish(noise_sha256_ctx *ctx, uint8_t *hash)
 {
-    size_t hash_len;
-    return psa_hash_finish(ctx, hash, PSA_HASH_LENGTH(PSA_ALG_SHA_256),
-                           &hash_len) != PSA_SUCCESS;
+    size_t hash_len = 0;
+    if (psa_hash_finish(ctx, hash, PSA_HASH_LENGTH(PSA_ALG_SHA_256),
+                        &hash_len) != PSA_SUCCESS)
+        return 1;
+    /* A digest of any other length is not the one asked for */
+    return hash_len != PSA_HASH_LENGTH(PSA_ALG_SHA_256);
 }
 
 static void noise_sha256_ctx_free(noise_sha256_ctx *ctx)
