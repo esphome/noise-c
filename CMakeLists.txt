@@ -44,7 +44,7 @@ if(ESP_PLATFORM)
     REQUIRES esphome__libsodium
   )
 else()
-  cmake_minimum_required(VERSION 3.14)
+  cmake_minimum_required(VERSION 3.13)
   if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     project(noise_c C)
   endif()
@@ -60,6 +60,9 @@ else()
       add_library(sodium INTERFACE IMPORTED GLOBAL)
       target_link_libraries(sodium INTERFACE PkgConfig::LIBSODIUM)
     elseif(NOISE_C_BUILD_TESTS)
+      if(CMAKE_VERSION VERSION_LESS 3.14)
+        message(FATAL_ERROR "NOISE_C_BUILD_TESTS needs CMake 3.14 or later")
+      endif()
       # Test against the libsodium ESPHome ships next to this library, at the
       # version idf_component.yml pins, with the fork's patches applied as the
       # published packages have them
@@ -80,8 +83,23 @@ else()
         COMMAND git -C libsodium clean -qfd
         COMMAND sh patches/apply.sh)
       FetchContent_MakeAvailable(esphome_libsodium)
-      if(NOT EXISTS "${esphome_libsodium_SOURCE_DIR}/libsodium/src/libsodium/include/sodium/sodium_esphome_patched.h")
-        message(FATAL_ERROR "The libsodium fork's patches were not applied")
+      if(NOT TARGET sodium)
+        message(FATAL_ERROR "The libsodium fork did not define a sodium target")
+      endif()
+      # The fast path in src/backend/sodium falls back to stock libsodium
+      # without a word when the patches are missing, so insist on it here
+      include(CheckCSourceCompiles)
+      get_target_property(_noise_c_sodium_includes sodium INTERFACE_INCLUDE_DIRECTORIES)
+      set(CMAKE_REQUIRED_INCLUDES ${_noise_c_sodium_includes})
+      check_c_source_compiles("
+        #include <sodium/sodium_esphome.h>
+        #if SODIUM_ESPHOME_NOISE_FAST_PATH != 1
+        #error the fast path is not available
+        #endif
+        int main(void) { return 0; }" NOISE_C_SODIUM_FAST_PATH)
+      unset(CMAKE_REQUIRED_INCLUDES)
+      if(NOT NOISE_C_SODIUM_FAST_PATH)
+        message(FATAL_ERROR "The libsodium fork's patches were not applied; the tests would run the stock code path")
       endif()
     endif()
   endif()

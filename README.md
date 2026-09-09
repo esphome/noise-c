@@ -39,7 +39,8 @@ generic build links against it automatically. Otherwise select the reference
 backend, or configure with `-DNOISE_C_FIND_LIBSODIUM=ON` to find a system
 libsodium with pkg-config.
 
-Minimum CMake version for the generic target is 3.14.
+Minimum CMake version for the generic target is 3.13; building the tests
+needs 3.14.
 
 Configuring with `-DNOISE_C_BUILD_TESTS=ON` also builds the unit and vector
 tests; `ctest` runs them. They link against ESPHome's libsodium fork, fetched
