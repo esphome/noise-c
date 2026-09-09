@@ -87,18 +87,18 @@ int main(int argc, char *argv[])
     run(small_build);
     run(symmetricstate);
 
-    /* Report the results; every name given must have been a test */
+    /* Report the results; every name given must have been a test, and a
+       stale name is reported alongside the failures rather than instead */
     if (names_matched < names_given) {
         fprintf(stderr, "%d of the names given matched no test\n",
                 names_given - names_matched);
-        return 1;
     }
     if (!test_failures) {
         printf("All tests succeeded\n");
     } else {
         printf("%d test%s failed\n", test_failures, test_failures == 1 ? "" : "s");
     }
-    return test_failures ? 1 : 0;
+    return (test_failures || names_matched < names_given) ? 1 : 0;
 }
 
 static int from_hex(char ch)
