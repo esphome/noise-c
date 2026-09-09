@@ -32,7 +32,7 @@
  */
 
 /**
- * \brief Gets cryptographically-strong random bytes from the operating system.
+ * \brief Gets cryptographically-strong random bytes from libsodium's generator.
  *
  * \param bytes The buffer to fill with random bytes.
  * \param size The number of random bytes to obtain.
