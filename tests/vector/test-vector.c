@@ -215,23 +215,76 @@ static const struct {
     {"SHA512", NOISE_USE_SHA512},
 };
 
-static int names_absent_algorithm(const char *protocol_name)
+/* True when the token is an algorithm a build flag turned off */
+static int absent_algorithm(const char *token, size_t len)
 {
-    const char *start = protocol_name;
-    for (;;) {
-        const char *end = start + strcspn(start, "_+");
-        size_t len = (size_t)(end - start);
-        size_t index;
-        for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
-            if (!algorithms[index].built &&
-                    strlen(algorithms[index].name) == len &&
-                    !memcmp(start, algorithms[index].name, len))
-                return 1;
-        }
-        if (!*end)
+    size_t index;
+    for (index = 0; index < sizeof(algorithms) / sizeof(algorithms[0]); ++index) {
+        if (!algorithms[index].built &&
+                strlen(algorithms[index].name) == len &&
+                !memcmp(token, algorithms[index].name, len))
+            return 1;
+    }
+    return 0;
+}
+
+/* Checks one algorithm field of a protocol name: every token must be known
+   in the category or absent, and only the DH field may join two with "+";
+   counts the absent ones */
+static int check_algorithm_field
+    (const char *field, size_t len, int category, int *absent)
+{
+    const char *end = field + len;
+    while (field < end) {
+        const char *plus = memchr(field, '+', (size_t)(end - field));
+        size_t token_len = plus ? (size_t)(plus - field) : (size_t)(end - field);
+        if (plus && category != NOISE_DH_CATEGORY)
             return 0;
+        if (absent_algorithm(field, token_len)) {
+            ++(*absent);
+        } else if (!noise_name_to_id(category, field, token_len)) {
+            return 0;
+        }
+        field += token_len + 1;
+    }
+    return 1;
+}
+
+/* A vector may be skipped only when its protocol name is well formed and
+   the only parts the library does not know are algorithms a build flag
+   turned off; a misspelt name is a failure even if it also names one */
+static int skippable_protocol(const char *protocol_name)
+{
+    static const int categories[3] = {
+        NOISE_DH_CATEGORY, NOISE_CIPHER_CATEGORY, NOISE_HASH_CATEGORY
+    };
+    const char *fields[4];
+    size_t lens[4];
+    const char *start = protocol_name;
+    int ids[16];
+    int absent = 0;
+    int index;
+    if (strncmp(start, "Noise_", 6) != 0)
+        return 0;
+    start += 6;
+    for (index = 0; index < 4; ++index) {
+        const char *end = strchr(start, '_');
+        if (index == 3 ? end != NULL : end == NULL)
+            return 0;
+        fields[index] = start;
+        lens[index] = end ? (size_t)(end - start) : strlen(start);
         start = end + 1;
     }
+    if (noise_name_list_to_ids(ids, sizeof(ids) / sizeof(ids[0]),
+                               fields[0], lens[0], NOISE_PATTERN_CATEGORY,
+                               NOISE_MODIFIER_CATEGORY) <= 0)
+        return 0;
+    for (index = 0; index < 3; ++index) {
+        if (!check_algorithm_field(fields[index + 1], lens[index + 1],
+                                   categories[index], &absent))
+            return 0;
+    }
+    return absent > 0;
 }
 
 /**
@@ -247,7 +300,7 @@ static int test_name_parsing(const TestVector *vec)
     int err = noise_protocol_name_to_id
                 (&id, vec->protocol_name, strlen(vec->protocol_name));
     if (err == NOISE_ERROR_UNKNOWN_NAME &&
-            names_absent_algorithm(vec->protocol_name))
+            skippable_protocol(vec->protocol_name))
         skip();
     compare(err, NOISE_ERROR_NONE);
     compare(id.prefix_id, NOISE_PREFIX_STANDARD);
