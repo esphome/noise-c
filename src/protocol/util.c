@@ -33,8 +33,10 @@ typedef crypto_hash_sha256_state sha256_context_t;
 #define sha256_reset(ctx) crypto_hash_sha256_init(ctx)
 #define sha256_update(ctx, pub, pub_len) crypto_hash_sha256_update(ctx, pub, pub_len)
 #define sha256_finish(ctx, hash) crypto_hash_sha256_final(ctx, hash)
-#else
+#elif NOISE_USE_REFERENCE_SHA256
 #include "crypto/sha2/sha256.h"
+#else
+#error "Fingerprints need a SHA256; turn NOISE_USE_SHA256 or NOISE_USE_REFERENCE_SHA256 on"
 #endif
 #endif
 #if NOISE_USE_OPENSSL
