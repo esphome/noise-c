@@ -37,16 +37,18 @@ static int test_selected(int argc, char *argv[], const char *name)
 {
     int index;
     int any = 0;
+    int selected = 0;
     for (index = 1; index < argc; ++index) {
         if (!strcmp(argv[index], "--verbose"))
             continue;
         any = 1;
+        /* Every occurrence counts, so a name given twice is not stale */
         if (!strcmp(argv[index], name)) {
             ++names_matched;
-            return 1;
+            selected = 1;
         }
     }
-    return !any;
+    return any ? selected : 1;
 }
 
 #define run(func) \
