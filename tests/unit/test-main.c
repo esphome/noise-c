@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
     run(symmetricstate);
 
     /* Report the results */
+    if (!test_count) {
+        fprintf(stderr, "no test matched the names given\n");
+        return 1;
+    }
     if (!test_failures) {
         printf("All tests succeeded\n");
     } else {
