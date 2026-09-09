@@ -56,16 +56,10 @@ static void test_id_mappings(void)
 {
     /* Check for known names/identifiers */
     check_id("ChaChaPoly", NOISE_CIPHER_CHACHAPOLY);
-    check_id("AESGCM", NOISE_CIPHER_AESGCM);
 
-    check_id("BLAKE2s", NOISE_HASH_BLAKE2s);
-    check_id("BLAKE2b", NOISE_HASH_BLAKE2b);
     check_id("SHA256", NOISE_HASH_SHA256);
-    check_id("SHA512", NOISE_HASH_SHA512);
 
     check_id("25519", NOISE_DH_CURVE25519);
-    check_id("448", NOISE_DH_CURVE448);
-    check_id("NewHope", NOISE_DH_NEWHOPE);
 
     check_id("N", NOISE_PATTERN_N);
     check_id("X", NOISE_PATTERN_X);
@@ -91,8 +85,6 @@ static void test_id_mappings(void)
     check_id("psk3", NOISE_MODIFIER_PSK3);
 
     check_id("Noise", NOISE_PREFIX_STANDARD);
-
-    check_id("Ed25519", NOISE_SIGN_ED25519);
 
     /* Check for unknown names/identifiers */
     compare(noise_name_to_id(NOISE_CIPHER_CATEGORY, "AESGCM-128", 10), 0);
@@ -156,8 +148,9 @@ static void check_name_list(const char *name, int error,
     compare(noise_name_list_to_ids(ids, MAX_IDS, name, 0,
                                    category1, category2),
             -NOISE_ERROR_UNKNOWN_NAME);
+    /* The cipher category is wrong for every name this test lists */
     compare(noise_name_list_to_ids(ids, MAX_IDS, name, strlen(name),
-                                   NOISE_SIGN_CATEGORY, category2),
+                                   NOISE_CIPHER_CATEGORY, category2),
             -NOISE_ERROR_UNKNOWN_NAME);
     compare(noise_ids_to_name_list(0, sizeof(output_name),
                                    expected_ids, expected_ids_len,
@@ -177,7 +170,7 @@ static void check_name_list(const char *name, int error,
             NOISE_ERROR_INVALID_PARAM);
     compare(noise_ids_to_name_list(output_name, sizeof(output_name),
                                    expected_ids, expected_ids_len,
-                                   NOISE_SIGN_CATEGORY, category2),
+                                   NOISE_CIPHER_CATEGORY, category2),
             NOISE_ERROR_UNKNOWN_ID);
     compare(noise_ids_to_name_list(output_name, 1,
                                    expected_ids, expected_ids_len,
@@ -194,16 +187,6 @@ static void test_name_lists(void)
     check_name_list("25519", NOISE_ERROR_NONE,
                     NOISE_DH_CATEGORY, NOISE_DH_CATEGORY,
                     NOISE_DH_CURVE25519, 0);
-    check_name_list("25519+448", NOISE_ERROR_NONE,
-                    NOISE_DH_CATEGORY, 0,
-                    NOISE_DH_CURVE25519, NOISE_DH_CURVE448, 0);
-    check_name_list("25519+BLAKE2s", NOISE_ERROR_NONE,
-                    NOISE_DH_CATEGORY, NOISE_HASH_CATEGORY,
-                    NOISE_DH_CURVE25519, NOISE_HASH_BLAKE2s, 0);
-    check_name_list("25519+BLAKE2s+SHA512", NOISE_ERROR_NONE,
-                    NOISE_DH_CATEGORY, NOISE_HASH_CATEGORY,
-                    NOISE_DH_CURVE25519, NOISE_HASH_BLAKE2s,
-                    NOISE_HASH_SHA512, 0);
 
     check_name_list("KX", NOISE_ERROR_NONE,
                     NOISE_PATTERN_CATEGORY, NOISE_MODIFIER_CATEGORY,
@@ -359,40 +342,25 @@ static void test_protocol_names(void)
         NOISE_MODIFIER_FALLBACK, NOISE_MODIFIER_HFS, NOISE_MODIFIER_PSK0
     };
     check_protocol_name
-        ("Noise_XX_25519_AESGCM_SHA256",
+        ("Noise_XX_25519_ChaChaPoly_SHA256",
          NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, NULL,
-         NOISE_DH_CURVE25519, NOISE_CIPHER_AESGCM,
+         NOISE_DH_CURVE25519, NOISE_CIPHER_CHACHAPOLY,
          NOISE_HASH_SHA256, 0);
     check_protocol_name
-        ("Noise_N_25519_ChaChaPoly_BLAKE2s",
+        ("Noise_N_25519_ChaChaPoly_SHA256",
          NOISE_PREFIX_STANDARD, NOISE_PATTERN_N, NULL,
          NOISE_DH_CURVE25519, NOISE_CIPHER_CHACHAPOLY,
-         NOISE_HASH_BLAKE2s, 0);
-    check_protocol_name
-        ("Noise_XXfallback_448_AESGCM_SHA512",
-         NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, fallback,
-         NOISE_DH_CURVE448, NOISE_CIPHER_AESGCM,
-         NOISE_HASH_SHA512, 0);
-    check_protocol_name
-        ("Noise_XXfallback+hfs+psk0_448_AESGCM_SHA512",
-         NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, multi,
-         NOISE_DH_CURVE448, NOISE_CIPHER_AESGCM,
-         NOISE_HASH_SHA512, 0);
-    check_protocol_name
-        ("Noise_IK_448_ChaChaPoly_BLAKE2b",
-         NOISE_PREFIX_STANDARD, NOISE_PATTERN_IK, NULL,
-         NOISE_DH_CURVE448, NOISE_CIPHER_CHACHAPOLY,
-         NOISE_HASH_BLAKE2b, 0);
-    check_protocol_name
-        ("Noise_NN_NewHope_AESGCM_SHA256",
-         NOISE_PREFIX_STANDARD, NOISE_PATTERN_NN, NULL,
-         NOISE_DH_NEWHOPE, NOISE_CIPHER_AESGCM,
          NOISE_HASH_SHA256, 0);
     check_protocol_name
-        ("Noise_XX_25519+NewHope_AESGCM_SHA256",
-         NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, NULL,
-         NOISE_DH_CURVE25519, NOISE_CIPHER_AESGCM,
-         NOISE_HASH_SHA256, NOISE_DH_NEWHOPE);
+        ("Noise_XXfallback_25519_ChaChaPoly_SHA256",
+         NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, fallback,
+         NOISE_DH_CURVE25519, NOISE_CIPHER_CHACHAPOLY,
+         NOISE_HASH_SHA256, 0);
+    check_protocol_name
+        ("Noise_XXfallback+hfs+psk0_25519_ChaChaPoly_SHA256",
+         NOISE_PREFIX_STANDARD, NOISE_PATTERN_XX, multi,
+         NOISE_DH_CURVE25519, NOISE_CIPHER_CHACHAPOLY,
+         NOISE_HASH_SHA256, 0);
 }
 
 void test_names(void)

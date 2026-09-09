@@ -253,31 +253,6 @@ static void cipherstate_check_test_vectors(void)
            "49e617d91d361094fa68f0ff77987130305beaba2eda04df997b714d6c6f2c29"
            "a6ad5cb4022b02709b",
          "0xeead9d67890cbb22392336fea1851f38");
-
-    /* Test vectors for AES in GCM mode from Appendix B of:
-       http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
-       We can only use a few of the vectors because most of the IV's in the
-       revised specification don't match what we need here */
-
-    /* AESGCM - gcm-revised-spec.pdf, test case #13 */
-    check_cipher
-        (NOISE_CIPHER_AESGCM, 32, 16, "AESGCM",
-         "0x0000000000000000000000000000000000000000000000000000000000000000",
-         0,
-         "",
-         "",
-         "",
-         "0x530f8afbc74536b9a963b4f1c4cb738b");
-
-    /* AESGCM - gcm-revised-spec.pdf, test case #14 */
-    check_cipher
-        (NOISE_CIPHER_AESGCM, 32, 16, "AESGCM",
-         "0x0000000000000000000000000000000000000000000000000000000000000000",
-         0,
-         "",
-         "0x00000000000000000000000000000000",
-         "0xcea7403d4d606b6e074ec5d3baf39d18",
-         "0xd0d1c8a799996bf0265b98b5d48ab919");
 }
 
 /* Check other error conditions that can be reported by the functions */
@@ -290,14 +265,14 @@ static void cipherstate_check_errors(void)
     compare(noise_cipherstate_get_cipher_id(0), NOISE_CIPHER_NONE);
     compare(noise_cipherstate_get_key_length(0), 0);
     compare(noise_cipherstate_get_mac_length(0), 0);
-    compare(noise_cipherstate_new_by_id(0, NOISE_HASH_BLAKE2s),
+    compare(noise_cipherstate_new_by_id(0, NOISE_CIPHER_CHACHAPOLY),
             NOISE_ERROR_INVALID_PARAM);
     compare(noise_cipherstate_new_by_name(0, "ChaChaPoly"),
             NOISE_ERROR_INVALID_PARAM);
 
     /* If the id/name is unknown, the state parameter should be set to NULL */
     state = (NoiseCipherState *)8;
-    compare(noise_cipherstate_new_by_id(&state, NOISE_HASH_BLAKE2s),
+    compare(noise_cipherstate_new_by_id(&state, NOISE_ID('C', 200)),
             NOISE_ERROR_UNKNOWN_ID);
     verify(state == NULL);
     state = (NoiseCipherState *)8;

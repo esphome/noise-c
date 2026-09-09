@@ -569,10 +569,9 @@ static void check_symmetric(const char *protocol)
 
 static void symmetricstate_check_protocols(void)
 {
-    check_symmetric("Noise_XX_25519_AESGCM_SHA256");
-    check_symmetric("Noise_N_25519_ChaChaPoly_BLAKE2s");
-    check_symmetric("Noise_XXfallback_448_AESGCM_SHA512");
-    check_symmetric("Noise_IK_448_ChaChaPoly_BLAKE2b");
+    check_symmetric("Noise_XX_25519_ChaChaPoly_SHA256");
+    check_symmetric("Noise_N_25519_ChaChaPoly_SHA256");
+    check_symmetric("Noise_XXfallback_25519_ChaChaPoly_SHA256");
 }
 
 /* Check other error conditions that can be reported by the functions */
@@ -589,7 +588,7 @@ static void symmetricstate_check_errors(void)
     compare(noise_symmetricstate_new_by_id(&state, 0),
             NOISE_ERROR_INVALID_PARAM);
     compare(noise_symmetricstate_new_by_name
-                (0, "Noise_N_25519_ChaChaPoly_BLAKE2s"),
+                (0, "Noise_N_25519_ChaChaPoly_SHA256"),
             NOISE_ERROR_INVALID_PARAM);
     compare(noise_symmetricstate_new_by_name(&state, 0),
             NOISE_ERROR_INVALID_PARAM);
@@ -605,7 +604,7 @@ static void symmetricstate_check_errors(void)
     verify(state == NULL);
     state = (NoiseSymmetricState *)8;
     compare(noise_symmetricstate_new_by_name
-                (&state, "Noise_N_25519_ChaChaPony_BLAKE2s"),
+                (&state, "Noise_N_25519_ChaChaPony_SHA256"),
             NOISE_ERROR_UNKNOWN_NAME);
     verify(state == NULL);
 }

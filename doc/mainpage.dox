@@ -50,16 +50,13 @@ XXfallback, Xnoidh, NXnoidh, XXnoidh, KXnoidh, IKnoidh, IXnoidh,
 NNhfs, NKhfs, NXhfs, XNhfs, XKhfs, XXhfs, KNhfs, KKhfs, KXhfs, INhfs, IKhfs,
 IXhfs, XXfallback+hfs, NXnoidh+hfs, XXnoidh+hfs, KXnoidh+hfs, IKnoidh+hfs,
 IXnoidh+hfs
-\li Diffie-Hellman: 25519, 448
-\li Post-Quantum: NewHope
-\li Cipher: ChaChaPoly, AESGCM
-\li Hash: BLAKE2s, BLAKE2b, SHA256, SHA512
+\li Diffie-Hellman: 25519
+\li Cipher: ChaChaPoly
+\li Hash: SHA256
 \li Other: Support for Hybrid Forward Secrecy
 
-Note that the post-quantum "NewHope" algorithm only works with the "NN"
-handshake pattern because it does not support long-term static keys.
-For more information, see the <a href="https://github.com/noiseprotocol/noise_wiki/wiki/Post-Quantum-Noise-with-New-Hope">Post-Quantum Noise with New Hope</a>
-page on the Noise wiki.
+This fork ships only the algorithms ESPHome uses; the name tables and
+unit tests cover that set.
 
 \section major_apis Major API's
 
@@ -73,22 +70,13 @@ page on the Noise wiki.
 \li \ref dhstate "DHState"
 \li \ref signstate "SignState"
 \li \ref randstate "RandState"
-\li \ref keyloader "Key/certificate loading and saving"
 \li \ref utils "Utilities"
-
-\section other_info Other information
-
-\li \ref example_echo "Using Noise-C: Client/Server Echo Example"
-\li \ref cert_key_format "Certificate and private key file format"
 
 \section dir_structure Directory structure
 
 \li <tt>include/noise/</tt> - Public API definitions for inclusion
     into applications.
 \li <tt>src/protocol/</tt> - Source code for the core Noise-C protocol library.
-\li <tt>src/protobufs/</tt> - Source code for the Noise-C protobufs library.
-\li <tt>src/keys/</tt> - Source code for the key and certificate management
-    library.
 \li <tt>src/crypto/</tt> - Public domain and open source reference
     implementations of the cryptographic primitives.
 \li <tt>src/backend/ref/</tt> - Backends for
@@ -97,50 +85,37 @@ page on the Noise wiki.
     reference cryptographic primitives.
 \li <tt>src/backend/openssl/</tt> - OpenSSL crypto backend
 \li <tt>src/backend/sodium/</tt> - libsodium crypto backend
-\li <tt>tools/protoc/</tt> - Source code for the Noise-C protobufs compiler.
-\li <tt>tools/keytool/</tt> - Command-line key and certificate management tool.
 \li <tt>tests/unit/</tt> - Unit tests to exercise the library's functionality.
 \li <tt>tests/vector/</tt> - Public JSON test vectors and test harness for
     the Noise protocol.
-\li <tt>tests/vector-gen/</tt> - Generates test vectors in JSON format.
-\li <tt>tests/performance/</tt> - Performance tests for the cryptographic
-    primitives.
-\li <tt>examples/</tt> - Source code for examples.
-\li <tt>doc/</tt> - Overview and example documentation.
+\li <tt>doc/</tt> - Overview documentation.
 
 \section building Building
 
-The library uses autoconf and automake for the Makefile structure.
-You will need to have these installed to build from the sources in the
-git repository.  Bison and Flex are also requred to build the
-<tt>noise-protoc</tt> protobuf compiler.
+The library builds with CMake. As an ESP-IDF component it is picked up
+by the component manager; any other CMake project can pull it in with
+<tt>add_subdirectory()</tt> and link <tt>esphome::noise_c</tt>. The crypto
+back end is chosen through the <tt>NOISE_USE_*</tt> macros in
+<tt>include/noise/defines.h</tt>; the default is libsodium.
 
-To build the library under GNU/Linux and run the tests, type the following:
+To build the library on a host and run the tests, type the following:
 
 \code
-$ autoreconf -i
-$ ./configure
-$ make
-$ make check
+$ cmake -S . -B build -DNOISE_C_BUILD_TESTS=ON
+$ cmake --build build
+$ ctest --test-dir build   # or cd build && ctest before CMake 3.20
 \endcode
 
-The following parameters can be supplied to <tt>configure</tt> to select
-other crypto back ends:
-
-\li <tt>--with-libsodium</tt> - Use libsodium to provide crypto primitives,
-falling back to the reference back end where libsodium does not have an
-implementation.
-\li <tt>--with-openssl</tt> - Use the AESGCM implementation from OpenSSL.
-
-Both options can be combined to get the best of both worlds.
+The tests fetch ESPHome's libsodium fork at the pinned version and apply
+its patches, so they run against the sources the published packages ship.
+<tt>-DNOISE_C_FIND_LIBSODIUM=ON</tt> uses a system libsodium found with
+pkg-config instead, for the tests or for a build without them.
 
 \section todo TODO
 
 In no particular order:
 
 \li Examples and overview documentation.
-\li Mechanism to encrypt static keypairs with a passphrase.
-\li Complete the standalone key generation utility for static keypairs.
 \li Compile-time subsetting of the library for applications that only
     need a subset of the algorithms, and for platforms with limited memory.
 
