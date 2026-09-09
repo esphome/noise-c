@@ -23,7 +23,7 @@
 
 #include "noise/defines.h"
 
-#if NOISE_USE_LIBSODIUM && !NOISE_USE_CUSTOM_RAND
+#if NOISE_USE_SODIUM_RAND
 #include <sodium.h>
 
 /**
@@ -47,4 +47,4 @@ void noise_rand_bytes(void *bytes, size_t size)
 }
 
 
-#endif  // NOISE_USE_LIBSODIUM && !NOISE_USE_CUSTOM_RAND
+#endif  // NOISE_USE_SODIUM_RAND

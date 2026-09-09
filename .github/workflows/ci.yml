@@ -38,5 +38,10 @@ jobs:
           cmake -S "$RUNNER_TEMP/consumer" -B build -DNOISE_C_BUILD_TESTS=ON -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
       - name: Build
         run: cmake --build build --parallel
+      - name: Build the library alone with the tests off
+        if: matrix.libsodium == 'system'
+        run: |
+          cmake -S . -B build-lib -DNOISE_C_FIND_LIBSODIUM=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build build-lib --parallel
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error

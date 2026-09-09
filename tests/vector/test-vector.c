@@ -920,6 +920,10 @@ static void process_test_vectors(JSONReader *reader)
     expect_token(reader, JSON_TOKEN_END, "EOF");
     printf("--------------------------------------------------------------\n");
     printf("%d vectors run, %d skipped as not in this build\n", run, skipped);
+    if (run + skipped == 0) {
+        printf("no vectors were found in this file\n");
+        ok = 0;
+    }
     if (!ok) {
         /* Some of the test vectors failed, so report a global failure */
         ++(reader->errors);
