@@ -914,6 +914,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    const char *progname = argv[0];
     int retval = 0;
     int expected_run = 1;
     int files = 0;
@@ -935,7 +936,7 @@ int main(int argc, char *argv[])
         ++argv;
     }
     if (!files) {
-        fprintf(stderr, "Usage: %s [--expect N] vectors1.txt ...\n", argv[0]);
+        fprintf(stderr, "Usage: %s [--expect N] vectors1.txt ...\n", progname);
         return 1;
     }
     return retval;

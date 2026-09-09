@@ -36,9 +36,6 @@
 
 /**
  * \defgroup handshakestate HandshakeState API
- *
- * See the \ref example_echo "echo example" for an overview of how
- * to use this API.
  */
 /**@{*/
 

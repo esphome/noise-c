@@ -103,6 +103,8 @@ else()
     target_link_libraries(noise-c-test-vector PRIVATE noise_c)
     target_compile_options(noise-c-test-vector PRIVATE
       $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
+    # Each count is how many vectors of that file name an algorithm set this
+    # build ships; raise it when adding such vectors so a skip cannot hide them
     add_test(NAME vectors
       COMMAND noise-c-test-vector
         --expect 36 "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
