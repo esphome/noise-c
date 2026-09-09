@@ -39,6 +39,12 @@
 #endif
 #define NOISE_SHA256_VIA_PSA
 #endif
+#else
+/* Without __has_include, go by the version: 4 made the sha256 API private */
+#include <mbedtls/build_info.h>
+#if MBEDTLS_VERSION_NUMBER >= 0x04000000
+#define NOISE_SHA256_VIA_PSA
+#endif
 #endif
 
 #ifdef NOISE_SHA256_VIA_PSA

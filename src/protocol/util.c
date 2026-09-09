@@ -229,6 +229,7 @@ int noise_is_zero(const void *data, size_t size)
  * \return NOISE_ERROR_INVALID_PARAM if \a buffer or \a public_key is NULL.
  * \return NOISE_ERROR_INVALID_PARAM if \a fingerprint_type is not a
  * supported fingerprint type.
+ * \return NOISE_ERROR_NO_MEMORY if the SHA256 state could not be allocated.
  * \return NOISE_ERROR_INVALID_LENGTH if \a len is not large enough to
  * hold the entire fingerprint string.
  *
