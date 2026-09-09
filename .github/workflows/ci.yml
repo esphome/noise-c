@@ -23,7 +23,9 @@ jobs:
       - name: Install the system libsodium
         if: matrix.libsodium == 'system'
         run: |
-          sudo apt-get update
+          # A broken third party source on the runner image must not stop the
+          # install; a missing package still fails here
+          sudo apt-get update || true
           sudo apt-get install -y libsodium-dev pkg-config
       - name: Configure against ESPHome's libsodium fork
         if: matrix.libsodium == 'fork'
