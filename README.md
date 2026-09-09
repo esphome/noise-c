@@ -78,6 +78,21 @@ off, since it builds its handshake from algorithm ids and never names one.
   `NOISE_ERROR_UNKNOWN_NAME`, and `noise_handshakestate_fallback` and
   `noise_handshakestate_fallback_to` return `NOISE_ERROR_NOT_APPLICABLE`.
 
+Hashing through the platform's mbedTLS
+--------------------------------------
+
+`NOISE_USE_MBEDTLS_SHA256`, off by default, replaces the libsodium backend's
+SHA256 with the platform's mbedTLS, through `mbedtls_sha256_*` where that API
+is public and through PSA on mbedTLS 4, where it is not. Where mbedTLS is
+already in the image that drops the second SHA256 copy from flash. Whether it
+is worth turning on depends on how the platform hashes: through PSA, as on
+ESP-IDF 6, nothing new is linked and the saving is free; through the ESP32 SHA
+peripheral driver on ESP-IDF 5 every hash takes and releases the engine, and a
+handshake is many short hashes, so it is slower than software. In the generic
+CMake build `-DNOISE_C_MBEDTLS_SHA256=ON` turns it on and links the system
+`mbedcrypto`; adding `-DNOISE_SHA256_VIA_PSA` to the C flags forces the PSA
+path on an mbedTLS that still has the public API, which is how CI covers it.
+
 This fork is maintained by the [ESPHome](https://esphome.io) project. To report
 bugs, contribute, or suggest improvements to it, please open an issue or pull
 request on [esphome-libs/noise-c](https://github.com/esphome-libs/noise-c/issues).

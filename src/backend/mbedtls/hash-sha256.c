@@ -44,6 +44,9 @@
 #ifdef NOISE_SHA256_VIA_PSA
 
 #include <psa/crypto.h>
+#if !defined(PSA_WANT_ALG_SHA_256)
+#error "NOISE_USE_MBEDTLS_SHA256 needs a PSA crypto built with SHA256"
+#endif
 #define NOISE_SHA256_PSA 1
 typedef psa_hash_operation_t noise_sha256_ctx;
 

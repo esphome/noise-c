@@ -114,7 +114,8 @@ else()
   endif()
 
   if(NOISE_C_MBEDTLS_SHA256)
-    find_path(NOISE_C_MBEDTLS_INCLUDE_DIR mbedtls/sha256.h)
+    # mbedTLS 4 no longer ships sha256.h; PSA is enough there
+    find_path(NOISE_C_MBEDTLS_INCLUDE_DIR NAMES mbedtls/sha256.h psa/crypto.h)
     find_library(NOISE_C_MBEDCRYPTO_LIBRARY mbedcrypto)
     if(NOT NOISE_C_MBEDTLS_INCLUDE_DIR OR NOT NOISE_C_MBEDCRYPTO_LIBRARY)
       message(FATAL_ERROR "NOISE_C_MBEDTLS_SHA256 needs mbedTLS's headers and mbedcrypto library")
