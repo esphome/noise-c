@@ -24,7 +24,6 @@
 #include "json-reader.h"
 #include <setjmp.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #define MAX_MESSAGES 32
 #define MAX_MESSAGE_SIZE 4096
@@ -197,9 +196,11 @@ static void dump_block(uint8_t *block, size_t len)
 static int test_name_parsing(const TestVector *vec)
 {
     NoiseProtocolId id;
-    compare(noise_protocol_name_to_id
-                (&id, vec->protocol_name, strlen(vec->protocol_name)),
-            NOISE_ERROR_NONE);
+    int err = noise_protocol_name_to_id
+                (&id, vec->protocol_name, strlen(vec->protocol_name));
+    if (err == NOISE_ERROR_UNKNOWN_NAME)
+        skip();  /* an algorithm this build leaves out */
+    compare(err, NOISE_ERROR_NONE);
     compare(id.prefix_id, NOISE_PREFIX_STANDARD);
     return id.pattern_id == NOISE_PATTERN_N ||
            id.pattern_id == NOISE_PATTERN_X ||
@@ -475,6 +476,10 @@ static void test_connection(const TestVector *vec, int is_one_way)
     compare(noise_cipherstate_free(c2resp), NOISE_ERROR_NONE);
 }
 
+/* Per file, reported and reset by process_test_vectors() */
+static int tests_run = 0;
+static int tests_skipped = 0;
+
 /**
  * \brief Runs a fully parsed test vector.
  *
@@ -492,9 +497,11 @@ static int test_vector_run(JSONReader *reader, const TestVector *vec)
         int is_one_way = test_name_parsing(vec);
         test_connection(vec, is_one_way);
         printf("ok\n");
+        ++tests_run;
         return 1;
     } else if (value == 2) {
         printf("skipped\n");
+        ++tests_skipped;
         return 1;
     } else {
         printf("-> test data at %s:%ld\n", reader->filename, vec->line_number);
@@ -701,6 +708,15 @@ static int process_test_vector(JSONReader *reader)
         } else if (json_is_name(reader, "protocol_name")) {
             vec.line_number = reader->line_number;
             expect_string_field(reader, &(vec.protocol_name));
+        } else if (json_is_name(reader, "pattern") ||
+                   json_is_name(reader, "dh") ||
+                   json_is_name(reader, "cipher") ||
+                   json_is_name(reader, "hash")) {
+            /* The noise-c vector files spell the protocol out field by
+               field as well as in "name"; the name is what gets used */
+            char *ignored = 0;
+            expect_string_field(reader, &ignored);
+            free(ignored);
         } else if (json_is_name(reader, "init_static")) {
             vec.init_static_len =
                 expect_binary_field(reader, &(vec.init_static));
@@ -788,10 +804,19 @@ static int process_test_vector(JSONReader *reader)
             json_error(reader, "Unknown field '%s'", reader->str_value);
         }
     }
+    if (!vec.protocol_name && vec.name) {
+        /* The noise-c vector files name each vector by its protocol */
+        vec.protocol_name = strdup(vec.name);
+        if (!vec.protocol_name)
+            json_error(reader, "Out of memory");
+    }
     if (!vec.protocol_name) {
-        json_error(reader, "Missing 'protocol_name' field");
+        if (!reader->errors)
+            json_error(reader, "Missing 'protocol_name' field");
     } else if (!vec.name) {
         vec.name = strdup(vec.protocol_name);
+        if (!vec.name)
+            json_error(reader, "Out of memory");
     }
     if (!reader->errors) {
         retval = test_vector_run(reader, &vec);
@@ -808,6 +833,8 @@ static int process_test_vector(JSONReader *reader)
 static void process_test_vectors(JSONReader *reader)
 {
     int ok = 1;
+    tests_run = 0;
+    tests_skipped = 0;
     printf("--------------------------------------------------------------\n");
     printf("Processing vectors from %s\n", reader->filename);
     json_next_token(reader);
@@ -826,6 +853,12 @@ static void process_test_vectors(JSONReader *reader)
     expect_token(reader, JSON_TOKEN_RBRACE, "}");
     expect_token(reader, JSON_TOKEN_END, "EOF");
     printf("--------------------------------------------------------------\n");
+    printf("%d vectors run, %d skipped as not in this build\n",
+           tests_run, tests_skipped);
+    if (!tests_run) {
+        printf("nothing ran: this build names no protocol in the file\n");
+        ok = 0;
+    }
     if (!ok) {
         /* Some of the test vectors failed, so report a global failure */
         ++(reader->errors);
@@ -859,25 +892,14 @@ int main(int argc, char *argv[])
     }
 
     int retval = 0;
-    char *srcdir = getenv("srcdir");
-    if (argc <= 1 && !srcdir) {
+    if (argc <= 1) {
         fprintf(stderr, "Usage: %s vectors1.txt vectors2.txt ...\n", argv[0]);
         return 1;
-    } else if (argc > 1) {
-        while (argc > 1) {
-            retval |= process_file(argv[1]);
-            --argc;
-            ++argv;
-        }
-    } else {
-        if (chdir(srcdir) < 0) {
-            perror(srcdir);
-            return 1;
-        }
-        retval |= process_file("cacophony.txt");
-        retval |= process_file("noise-c-basic.txt");
-        retval |= process_file("noise-c-fallback.txt");
-        retval |= process_file("noise-c-hybrid.txt");
+    }
+    while (argc > 1) {
+        retval |= process_file(argv[1]);
+        --argc;
+        ++argv;
     }
     return retval;
 }

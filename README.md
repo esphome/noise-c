@@ -40,6 +40,11 @@ backend (or provide libsodium yourself) before building.
 
 Minimum CMake version for the generic target is 3.13.
 
+Configuring with `-DNOISE_C_BUILD_TESTS=ON` also builds the unit and vector
+tests, which need libsodium on the host; `ctest` runs them. The unit tests cover
+the algorithms this fork ships. The vector runner skips a vector naming an
+algorithm the build leaves out and reports how many it skipped.
+
 This fork is maintained by the [ESPHome](https://esphome.io) project. To report
 bugs, contribute, or suggest improvements to it, please open an issue or pull
 request on [esphome-libs/noise-c](https://github.com/esphome-libs/noise-c/issues).

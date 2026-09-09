@@ -20,37 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __KEYTOOL_H__
-#define __KEYTOOL_H__
+/* The library leaves random bytes to the application; for the test programs
+   on the host that is libsodium's generator */
 
-#include <noise/protocol.h>
-#include <noise/keys.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <getopt.h>
+#include <noise/defines.h>
+#if NOISE_USE_CUSTOM_RAND
+#include <sodium.h>
 
-void help_generate(const char *progname);
-void help_show(const char *progname);
-void help_sign(const char *progname);
-
-int main_generate(const char *progname, int argc, char *argv[]);
-int main_show(const char *progname, int argc, char *argv[]);
-int main_sign(const char *progname, int argc, char *argv[]);
-
-void report_error(const char *file, long line, int err);
-
-char *ask_for_passphrase(int confirm);
-
-#define CHECK_ERROR(code)   \
-    do { \
-        int err = (code); \
-        if (err != NOISE_ERROR_NONE) { \
-            report_error(__FILE__, __LINE__, err); \
-            retval = 1; \
-            goto cleanup; \
-        } \
-    } while (0)
+void noise_rand_bytes(void *bytes, size_t size)
+{
+    randombytes_buf(bytes, size);
+}
 
 #endif

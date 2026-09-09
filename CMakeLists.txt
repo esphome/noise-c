@@ -46,6 +46,17 @@ if(ESP_PLATFORM)
 else()
   cmake_minimum_required(VERSION 3.13)
 
+  option(NOISE_C_BUILD_TESTS "Build the unit and vector tests" OFF)
+  option(NOISE_C_FIND_LIBSODIUM
+    "Find libsodium with pkg-config for the default backend" ${NOISE_C_BUILD_TESTS})
+
+  if(NOISE_C_FIND_LIBSODIUM AND NOT TARGET sodium)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET libsodium)
+    add_library(sodium INTERFACE IMPORTED GLOBAL)
+    target_link_libraries(sodium INTERFACE PkgConfig::LIBSODIUM)
+  endif()
+
   add_library(noise_c STATIC ${NOISE_C_SRCS})
   add_library(esphome::noise_c ALIAS noise_c)
 
@@ -59,5 +70,39 @@ else()
   # link a libsodium target if the consumer has already defined one.
   if(TARGET sodium)
     target_link_libraries(noise_c PUBLIC sodium)
+  endif()
+
+  if(NOISE_C_BUILD_TESTS)
+    enable_testing()
+    add_executable(noise-c-test-unit
+      "tests/unit/test-cipherstate.c"
+      "tests/unit/test-dhstate.c"
+      "tests/unit/test-errors.c"
+      "tests/unit/test-handshakestate.c"
+      "tests/unit/test-hashstate.c"
+      "tests/unit/test-main.c"
+      "tests/unit/test-names.c"
+      "tests/unit/test-patterns.c"
+      "tests/unit/test-randstate.c"
+      "tests/unit/test-symmetricstate.c"
+      "tests/rand-sodium.c"
+    )
+    target_link_libraries(noise-c-test-unit PRIVATE noise_c)
+    target_compile_options(noise-c-test-unit PRIVATE
+      $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
+    add_test(NAME unit COMMAND noise-c-test-unit)
+
+    add_executable(noise-c-test-vector
+      "tests/vector/test-vector.c"
+      "tests/vector/json-reader.c"
+      "tests/rand-sodium.c"
+    )
+    target_link_libraries(noise-c-test-vector PRIVATE noise_c)
+    target_compile_options(noise-c-test-vector PRIVATE
+      $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
+    add_test(NAME vectors
+      COMMAND noise-c-test-vector
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/cacophony.txt"
+        "${CMAKE_CURRENT_LIST_DIR}/tests/vector/noise-c-basic.txt")
   endif()
 endif()

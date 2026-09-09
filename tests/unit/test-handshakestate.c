@@ -31,16 +31,6 @@ static uint8_t const init_private_25519[32] = {
     0x4c, 0x8d, 0xf7, 0xed, 0x54, 0x22, 0x14, 0xd1
 };
 static uint8_t init_public_25519[32];
-static uint8_t const init_private_448[56] = {
-    0x34, 0xd5, 0x64, 0xc4, 0xbe, 0x96, 0x3d, 0x1b,
-    0x2a, 0x89, 0xfc, 0xfe, 0x83, 0xe6, 0xa7, 0x2b,
-    0x5e, 0x3f, 0x5e, 0x31, 0x27, 0xf9, 0xf5, 0x96,
-    0xff, 0xc7, 0x57, 0x5e, 0x41, 0x8d, 0xfc, 0x1f,
-    0x4e, 0x82, 0x7c, 0xfc, 0x10, 0xc9, 0xfe, 0xd3,
-    0x8e, 0x92, 0xad, 0x56, 0xdd, 0xf8, 0xf0, 0x85,
-    0x71, 0x43, 0x0d, 0xf2, 0xe7, 0x6d, 0x54, 0x11
-};
-static uint8_t init_public_448[56];
 static uint8_t const resp_private_25519[32] = {
     0x4a, 0x3a, 0xcb, 0xfd, 0xb1, 0x63, 0xde, 0xc6,
     0x51, 0xdf, 0xa3, 0x19, 0x4d, 0xec, 0xe6, 0x76,
@@ -48,16 +38,6 @@ static uint8_t const resp_private_25519[32] = {
     0xc5, 0xea, 0x91, 0x14, 0x24, 0x6e, 0x48, 0x93
 };
 static uint8_t resp_public_25519[32];
-static uint8_t const resp_private_448[56] = {
-    0xa9, 0xb4, 0x59, 0x71, 0x18, 0x08, 0x82, 0xa7,
-    0x9b, 0x89, 0xa3, 0x39, 0x95, 0x44, 0xa4, 0x25,
-    0xef, 0x81, 0x36, 0xd2, 0x78, 0xef, 0xa4, 0x43,
-    0xed, 0x67, 0xd3, 0xff, 0x9d, 0x36, 0xe8, 0x83,
-    0xbc, 0x33, 0x0c, 0x62, 0x95, 0xbb, 0xf6, 0xed,
-    0x73, 0xff, 0x6f, 0xd1, 0x0c, 0xbe, 0xd7, 0x67,
-    0xad, 0x05, 0xce, 0x03, 0xeb, 0xd2, 0x7c, 0x7c
-};
-static uint8_t resp_public_448[56];
 static uint8_t const resp_private_25519_alt[32] = {
     0xbb, 0xdb, 0x4c, 0xdb, 0xd3, 0x09, 0xf1, 0xa1,
     0xf2, 0xe1, 0x45, 0x69, 0x67, 0xfe, 0x28, 0x8c,
@@ -65,16 +45,6 @@ static uint8_t const resp_private_25519_alt[32] = {
     0x79, 0x3d, 0x5e, 0x63, 0xda, 0x6b, 0x37, 0x5b
 };
 static uint8_t resp_public_25519_alt[32];
-static uint8_t const resp_private_448_alt[56] = {
-    0x3f, 0xac, 0xf7, 0x50, 0x3e, 0xbe, 0xe2, 0x52,
-    0x46, 0x56, 0x89, 0xf1, 0xd4, 0xe3, 0xb1, 0xdd,
-    0x21, 0x96, 0x39, 0xef, 0x9d, 0xe4, 0xff, 0xd6,
-    0x04, 0x9d, 0x6d, 0x71, 0xa0, 0xf6, 0x21, 0x26,
-    0x84, 0x0f, 0xeb, 0xb9, 0x90, 0x42, 0x42, 0x1c,
-    0xe1, 0x2a, 0xf6, 0x62, 0x6d, 0x98, 0xd9, 0x17,
-    0x02, 0x60, 0x39, 0x0f, 0xbc, 0x83, 0x99, 0xa5
-};
-static uint8_t resp_public_448_alt[56];
 static uint8_t const psk[32] = {
     0xf3, 0xd9, 0x4d, 0xa3, 0x74, 0x53, 0x90, 0x36,
     0x62, 0xf7, 0xd2, 0x16, 0xfc, 0xd2, 0x0f, 0xd9,
@@ -110,28 +80,6 @@ static void handshakestate_derive_keys(void)
             NOISE_ERROR_NONE);
     compare(noise_dhstate_free(dh), NOISE_ERROR_NONE);
 
-    /* Curve448 keys */
-    compare(noise_dhstate_new_by_id(&dh, NOISE_DH_CURVE448),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_set_keypair_private
-                (dh, init_private_448, sizeof(init_private_448)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_get_public_key
-                (dh, init_public_448, sizeof(init_public_448)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_set_keypair_private
-                (dh, resp_private_448, sizeof(resp_private_448)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_get_public_key
-                (dh, resp_public_448, sizeof(resp_public_448)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_set_keypair_private
-                (dh, resp_private_448_alt, sizeof(resp_private_448_alt)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_get_public_key
-                (dh, resp_public_448_alt, sizeof(resp_public_448_alt)),
-            NOISE_ERROR_NONE);
-    compare(noise_dhstate_free(dh), NOISE_ERROR_NONE);
 }
 
 /* Determine if a handshake needs a pre-shared key */
@@ -219,15 +167,9 @@ static void check_handshake_protocol(const char *name)
         compare(noise_handshakestate_start(initiator),
                 NOISE_ERROR_LOCAL_KEY_REQUIRED);
         dh = noise_handshakestate_get_local_keypair_dh(initiator);
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, init_private_25519, sizeof(init_private_25519)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, init_private_448, sizeof(init_private_448)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_keypair_private
+                    (dh, init_private_25519, sizeof(init_private_25519)),
+                NOISE_ERROR_NONE);
         compare(noise_handshakestate_has_local_keypair(initiator), 1);
     } else {
         dh = noise_handshakestate_get_local_keypair_dh(initiator);
@@ -238,15 +180,9 @@ static void check_handshake_protocol(const char *name)
         compare(noise_handshakestate_start(initiator),
                 NOISE_ERROR_REMOTE_KEY_REQUIRED);
         dh = noise_handshakestate_get_remote_public_key_dh(initiator);
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_public_key
-                        (dh, resp_public_25519, sizeof(resp_public_25519)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_public_key
-                        (dh, resp_public_448, sizeof(resp_public_448)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_public_key
+                    (dh, resp_public_25519, sizeof(resp_public_25519)),
+                NOISE_ERROR_NONE);
         compare(noise_handshakestate_has_remote_public_key(initiator), 1);
     } else {
         dh = noise_handshakestate_get_remote_public_key_dh(initiator);
@@ -260,15 +196,9 @@ static void check_handshake_protocol(const char *name)
         compare(noise_handshakestate_start(responder),
                 NOISE_ERROR_LOCAL_KEY_REQUIRED);
         dh = noise_handshakestate_get_local_keypair_dh(responder);
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_25519, sizeof(resp_private_25519)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_448, sizeof(resp_private_448)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_keypair_private
+                    (dh, resp_private_25519, sizeof(resp_private_25519)),
+                NOISE_ERROR_NONE);
         compare(noise_handshakestate_has_local_keypair(responder), 1);
     } else {
         dh = noise_handshakestate_get_local_keypair_dh(responder);
@@ -279,15 +209,9 @@ static void check_handshake_protocol(const char *name)
         compare(noise_handshakestate_start(responder),
                 NOISE_ERROR_REMOTE_KEY_REQUIRED);
         dh = noise_handshakestate_get_remote_public_key_dh(responder);
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_public_key
-                        (dh, init_public_25519, sizeof(init_public_25519)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_public_key
-                        (dh, init_public_448, sizeof(init_public_448)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_public_key
+                    (dh, init_public_25519, sizeof(init_public_25519)),
+                NOISE_ERROR_NONE);
         compare(noise_handshakestate_has_remote_public_key(responder), 1);
     } else {
         dh = noise_handshakestate_get_remote_public_key_dh(responder);
@@ -428,30 +352,31 @@ static void check_handshake_protocol(const char *name)
 
 static void handshakestate_check_protocols(void)
 {
-    check_handshake_protocol("Noise_N_25519_ChaChaPoly_BLAKE2s");
-    check_handshake_protocol("Noise_K_25519_AESGCM_SHA256");
-    check_handshake_protocol("Noise_X_448_AESGCM_SHA512");
+    check_handshake_protocol("Noise_N_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_K_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_X_25519_ChaChaPoly_SHA256");
 
-    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_BLAKE2s");
-    check_handshake_protocol("Noise_NK_448_ChaChaPoly_BLAKE2b");
-    check_handshake_protocol("Noise_NX_25519_AESGCM_BLAKE2b");
+    check_handshake_protocol("Noise_NN_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_NK_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_NX_25519_ChaChaPoly_SHA256");
 
-    check_handshake_protocol("Noise_XN_448_AESGCM_BLAKE2s");
-    check_handshake_protocol("Noise_XK_25519_AESGCM_SHA256");
-    check_handshake_protocol("Noise_XX_25519_ChaChaPoly_SHA512");
+    check_handshake_protocol("Noise_XN_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_XK_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_XX_25519_ChaChaPoly_SHA256");
 
-    check_handshake_protocol("Noise_KN_448_ChaChaPoly_SHA512");
-    check_handshake_protocol("Noise_KK_25519_AESGCM_BLAKE2b");
-    check_handshake_protocol("Noise_KX_448_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_KN_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_KK_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_KX_25519_ChaChaPoly_SHA256");
 
-    check_handshake_protocol("Noise_IN_25519_ChaChaPoly_BLAKE2s");
-    check_handshake_protocol("Noise_IK_25519_AESGCM_BLAKE2b");
-    check_handshake_protocol("Noise_IX_448_AESGCM_SHA512");
+    check_handshake_protocol("Noise_IN_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_IK_25519_ChaChaPoly_SHA256");
+    check_handshake_protocol("Noise_IX_25519_ChaChaPoly_SHA256");
 }
 
 /* Check that "IK" correctly falls back to "XXfallback" */
 static void check_fallback_protocol
-    (const char *name, int fallback_anyway, int trial_initiator_decrypt)
+    (const char *label, const char *name, int fallback_anyway,
+     int trial_initiator_decrypt)
 {
     NoiseHandshakeState *initiator;
     NoiseHandshakeState *responder;
@@ -463,7 +388,7 @@ static void check_fallback_protocol
     NoiseBuffer pbuf;
 
     /* Set the name of this test for error reporting */
-    data_name = name;
+    data_name = label;
 
     /* Create the two objects for an initial "IK" handshake */
     compare(noise_handshakestate_new_by_name
@@ -480,47 +405,23 @@ static void check_fallback_protocol
     compare(noise_handshakestate_set_prologue(responder, "Hello", 5),
             NOISE_ERROR_NONE);
     dh = noise_handshakestate_get_local_keypair_dh(initiator);
-    if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-        compare(noise_dhstate_set_keypair_private
-                    (dh, init_private_25519, sizeof(init_private_25519)),
-                NOISE_ERROR_NONE);
-    } else {
-        compare(noise_dhstate_set_keypair_private
-                    (dh, init_private_448, sizeof(init_private_448)),
-                NOISE_ERROR_NONE);
-    }
+    compare(noise_dhstate_set_keypair_private
+                (dh, init_private_25519, sizeof(init_private_25519)),
+            NOISE_ERROR_NONE);
     dh = noise_handshakestate_get_remote_public_key_dh(initiator);
-    if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-        compare(noise_dhstate_set_public_key
-                    (dh, resp_public_25519, sizeof(resp_public_25519)),
-                NOISE_ERROR_NONE);
-    } else {
-        compare(noise_dhstate_set_public_key
-                    (dh, resp_public_448, sizeof(resp_public_448)),
-                NOISE_ERROR_NONE);
-    }
+    compare(noise_dhstate_set_public_key
+                (dh, resp_public_25519, sizeof(resp_public_25519)),
+            NOISE_ERROR_NONE);
     dh = noise_handshakestate_get_local_keypair_dh(responder);
     if (!fallback_anyway) {
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_25519_alt, sizeof(resp_private_25519_alt)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_448_alt, sizeof(resp_private_448_alt)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_keypair_private
+                    (dh, resp_private_25519_alt, sizeof(resp_private_25519_alt)),
+                NOISE_ERROR_NONE);
     } else {
         /* Matching keys, but the responder will fallback anyway */
-        if (noise_dhstate_get_dh_id(dh) == NOISE_DH_CURVE25519) {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_25519, sizeof(resp_private_25519)),
-                    NOISE_ERROR_NONE);
-        } else {
-            compare(noise_dhstate_set_keypair_private
-                        (dh, resp_private_448, sizeof(resp_private_448)),
-                    NOISE_ERROR_NONE);
-        }
+        compare(noise_dhstate_set_keypair_private
+                    (dh, resp_private_25519, sizeof(resp_private_25519)),
+                NOISE_ERROR_NONE);
     }
     if (needs_pre_shared_key(name)) {
         compare(noise_handshakestate_set_pre_shared_key
@@ -637,9 +538,12 @@ static void check_fallback_protocol
 
 static void handshakestate_check_fallback(void)
 {
-    check_fallback_protocol("Noise_IK_25519_ChaChaPoly_BLAKE2s", 0, 0);
-    check_fallback_protocol("Noise_IK_448_AESGCM_SHA512", 1, 0);
-    check_fallback_protocol("Noise_IK_448_ChaChaPoly_BLAKE2b", 0, 1);
+    check_fallback_protocol("IK to XXfallback",
+                            "Noise_IK_25519_ChaChaPoly_SHA256", 0, 0);
+    check_fallback_protocol("IK to XXfallback, responder falls back anyway",
+                            "Noise_IK_25519_ChaChaPoly_SHA256", 1, 0);
+    check_fallback_protocol("IK to XXfallback, initiator trial decrypt",
+                            "Noise_IK_25519_ChaChaPoly_SHA256", 0, 1);
 }
 
 static void handshakestate_check_errors(void)
@@ -668,12 +572,12 @@ static void handshakestate_check_errors(void)
     verify(state == NULL);
     state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_name
-                (&state, "Noise_XX_25519_ChaChaPony_BLAKE2s",
+                (&state, "Noise_XX_25519_ChaChaPony_SHA256",
                  NOISE_ROLE_INITIATOR),
             NOISE_ERROR_UNKNOWN_NAME);
     state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_name
-                (&state, "Noise_XX_25519_ChaChaPoly_BLAKE2s",
+                (&state, "Noise_XX_25519_ChaChaPoly_SHA256",
                  NOISE_DH_CURVE25519),
             NOISE_ERROR_INVALID_PARAM);
     verify(state == NULL);
@@ -681,7 +585,7 @@ static void handshakestate_check_errors(void)
     id.pattern_id = NOISE_PATTERN_XX;
     id.dh_id = NOISE_DH_CURVE25519;
     id.cipher_id = NOISE_CIPHER_CHACHAPOLY;
-    id.hash_id = NOISE_HASH_BLAKE2s;
+    id.hash_id = NOISE_HASH_SHA256;
     state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_id(&state, &id, NOISE_DH_CURVE25519),
             NOISE_ERROR_INVALID_PARAM);
