@@ -80,6 +80,9 @@ else()
         COMMAND git -C libsodium clean -qfd
         COMMAND sh patches/apply.sh)
       FetchContent_MakeAvailable(esphome_libsodium)
+      if(NOT EXISTS "${esphome_libsodium_SOURCE_DIR}/libsodium/src/libsodium/include/sodium/sodium_esphome_patched.h")
+        message(FATAL_ERROR "The libsodium fork's patches were not applied")
+      endif()
     endif()
   endif()
 
