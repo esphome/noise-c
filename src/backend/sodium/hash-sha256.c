@@ -22,7 +22,7 @@
  */
 
 #include "noise/defines.h"
-#if NOISE_USE_LIBSODIUM && NOISE_USE_SHA256 && !NOISE_USE_MBEDTLS_SHA256
+#if NOISE_USE_SODIUM_SHA256_STATE
 
 #include "protocol/internal.h"
 #include <sodium.h>
@@ -66,4 +66,4 @@ NoiseHashState *noise_sha256_new(void)
     return &(state->parent);
 }
 
-#endif  // NOISE_USE_LIBSODIUM
+#endif  // NOISE_USE_SODIUM_SHA256_STATE

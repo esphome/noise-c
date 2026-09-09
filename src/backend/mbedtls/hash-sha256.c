@@ -23,7 +23,7 @@
 /* SHA256 through the platform's mbedTLS; see NOISE_USE_MBEDTLS_SHA256 */
 
 #include "noise/defines.h"
-#if NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_SHA256
+#if NOISE_USE_MBEDTLS_SHA256_STATE
 #include "protocol/internal.h"
 #include <string.h>
 
@@ -37,7 +37,9 @@
 #if !__has_include(<psa/crypto.h>)
 #error "NOISE_USE_MBEDTLS_SHA256 needs mbedTLS on the include path"
 #endif
+#ifndef NOISE_SHA256_VIA_PSA
 #define NOISE_SHA256_VIA_PSA
+#endif
 #endif
 #elif !defined(NOISE_SHA256_VIA_PSA)
 /* Without __has_include, go by the version: 4 made the sha256 API private */
@@ -206,4 +208,4 @@ NoiseHashState *noise_sha256_new(void)
     return &(state->parent);
 }
 
-#endif  // NOISE_USE_MBEDTLS_SHA256 && NOISE_USE_SHA256
+#endif  // NOISE_USE_MBEDTLS_SHA256_STATE
