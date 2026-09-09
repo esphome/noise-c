@@ -358,8 +358,9 @@ static void handshakestate_check_protocols(void)
     char name[NOISE_MAX_PROTOCOL_NAME];
     size_t index;
     for (index = 0; index < sizeof(patterns) / sizeof(patterns[0]); ++index) {
-        snprintf(name, sizeof(name), "Noise_%s_25519_ChaChaPoly_SHA256",
-                 patterns[index]);
+        int len = snprintf(name, sizeof(name), "Noise_%s_25519_ChaChaPoly_SHA256",
+                           patterns[index]);
+        verify(len > 0 && (size_t)len < sizeof(name));
         check_handshake_protocol(name);
     }
 }

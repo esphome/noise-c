@@ -22,7 +22,6 @@
  */
 
 #include "protocol/internal.h"
-#include "noise/defines.h"
 
 #if NOISE_USE_SODIUM_RAND
 #include <sodium.h>
