@@ -24,6 +24,8 @@
    on the host that is libsodium's generator */
 
 #include <noise/defines.h>
+/* The library's own rand_sodium.c never includes defines.h, so it
+   compiles to nothing and this is the only definition linked */
 #if NOISE_USE_CUSTOM_RAND
 #include <sodium.h>
 #include <stddef.h>

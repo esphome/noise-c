@@ -818,12 +818,16 @@ static int process_test_vector(JSONReader *reader)
         /* The noise-c files spell out the protocol the handshake starts
            with; in the fallback file "name" is the one it ends on */
         char spelled[NOISE_MAX_PROTOCOL_NAME];
-        snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
-                 vec.pattern, vec.dh, vec.cipher, vec.hash);
-        free(vec.protocol_name);
-        vec.protocol_name = strdup(spelled);
-        if (!vec.protocol_name)
-            json_error(reader, "Out of memory");
+        int len = snprintf(spelled, sizeof(spelled), "Noise_%s_%s_%s_%s",
+                           vec.pattern, vec.dh, vec.cipher, vec.hash);
+        if (len < 0 || (size_t)len >= sizeof(spelled)) {
+            json_error(reader, "Protocol name is too long");
+        } else {
+            free(vec.protocol_name);
+            vec.protocol_name = strdup(spelled);
+            if (!vec.protocol_name)
+                json_error(reader, "Out of memory");
+        }
     }
     if (!vec.protocol_name) {
         if (!reader->errors)

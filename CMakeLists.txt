@@ -51,9 +51,9 @@ else()
 
   option(NOISE_C_BUILD_TESTS "Build the unit and vector tests" OFF)
   option(NOISE_C_FIND_LIBSODIUM
-    "Find libsodium with pkg-config for the default backend" ${NOISE_C_BUILD_TESTS})
+    "Find libsodium with pkg-config for the default backend" OFF)
 
-  if(NOISE_C_FIND_LIBSODIUM AND NOT TARGET sodium)
+  if((NOISE_C_FIND_LIBSODIUM OR NOISE_C_BUILD_TESTS) AND NOT TARGET sodium)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET GLOBAL libsodium)
     add_library(sodium INTERFACE IMPORTED GLOBAL)
