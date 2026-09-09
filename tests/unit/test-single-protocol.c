@@ -51,6 +51,19 @@ static void compare_id_to_name(const NoiseProtocolId *id)
     verify(!strcmp(single_name, table_name));
 }
 
+/* The same, with a buffer of the given length, where the exact fit and one
+   short of it must be judged alike */
+static void compare_id_to_name_len(const NoiseProtocolId *id, size_t len)
+{
+    char table_name[NOISE_MAX_PROTOCOL_NAME];
+    char single_name[NOISE_MAX_PROTOCOL_NAME];
+    int table_err = noise_protocol_id_to_name(table_name, len, id);
+    int single_err = single_id_to_name(single_name, len, id);
+    compare(single_err, table_err);
+    if (table_err == NOISE_ERROR_NONE)
+        verify(!strcmp(single_name, table_name));
+}
+
 static void compare_name_to_id(const char *name)
 {
     NoiseProtocolId table_id;
@@ -124,6 +137,11 @@ void test_single_protocol(void)
     id.dh_id = NOISE_DH_NONE;
     compare_id_to_name(&id);
     id.dh_id = NOISE_DH_CURVE25519;
+
+    /* The name is 36 characters: a 37 byte buffer fits, a 36 byte one does
+       not, and both versions must say so */
+    compare_id_to_name_len(&id, 37);
+    compare_id_to_name_len(&id, 36);
 
     /* Bad parameters, which both versions treat alike */
     compare_id_to_name(0);

@@ -51,9 +51,12 @@ static int test_selected(int argc, char *argv[], const char *name)
 
 int main(int argc, char *argv[])
 {
-    /* Parse the command-line arguments */
-    if (argc > 1 && !strcmp(argv[1], "--verbose"))
-        verbose = 1;
+    /* Parse the command-line arguments; --verbose may sit anywhere */
+    int index;
+    for (index = 1; index < argc; ++index) {
+        if (!strcmp(argv[index], "--verbose"))
+            verbose = 1;
+    }
 
     if (noise_init_framework() != NOISE_ERROR_NONE) {
         fprintf(stderr, "Noise initialization failed\n");
