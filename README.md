@@ -36,13 +36,17 @@ The crypto backend is a compile-time choice made through the `NOISE_USE_*`
 macros in `include/noise/defines.h`. The default backend is libsodium; if your
 project already defines a `sodium` target before `add_subdirectory()`, the
 generic build links against it automatically. Otherwise select the reference
-backend, or configure with `-DNOISE_C_FIND_LIBSODIUM=ON` to find libsodium
-with pkg-config.
+backend, or configure with `-DNOISE_C_FIND_LIBSODIUM=ON` to find a system
+libsodium with pkg-config.
 
-Minimum CMake version for the generic target is 3.13.
+Minimum CMake version for the generic target is 3.14.
 
 Configuring with `-DNOISE_C_BUILD_TESTS=ON` also builds the unit and vector
-tests, which need libsodium on the host; `ctest` runs them. The unit tests cover
+tests; `ctest` runs them. They link against ESPHome's libsodium fork, fetched
+from GitHub at the version `idf_component.yml` pins with its patches applied,
+so the tests exercise the same sources the published packages ship. Add
+`-DNOISE_C_FIND_LIBSODIUM=ON` to test against a system libsodium instead. The
+unit tests cover
 the algorithms this fork ships. The vector runner skips a vector naming an
 algorithm the build leaves out and reports how many it skipped.
 

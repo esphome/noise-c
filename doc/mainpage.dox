@@ -109,9 +109,10 @@ $ cmake --build build
 $ ctest --test-dir build
 \endcode
 
-The tests need libsodium on the host, found with pkg-config.
-<tt>-DNOISE_C_FIND_LIBSODIUM=ON</tt> does the same lookup for a build
-without the tests.
+The tests fetch ESPHome's libsodium fork at the pinned version and apply
+its patches, so they run against the sources the published packages ship.
+<tt>-DNOISE_C_FIND_LIBSODIUM=ON</tt> uses a system libsodium found with
+pkg-config instead, for the tests or for a build without them.
 
 \section todo TODO
 

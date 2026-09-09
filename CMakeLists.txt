@@ -44,20 +44,43 @@ if(ESP_PLATFORM)
     REQUIRES esphome__libsodium
   )
 else()
-  cmake_minimum_required(VERSION 3.13)
+  cmake_minimum_required(VERSION 3.14)
   if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     project(noise_c C)
   endif()
 
   option(NOISE_C_BUILD_TESTS "Build the unit and vector tests" OFF)
   option(NOISE_C_FIND_LIBSODIUM
-    "Find libsodium with pkg-config for the default backend" OFF)
+    "Find a system libsodium with pkg-config instead of building ESPHome's fork" OFF)
 
-  if((NOISE_C_FIND_LIBSODIUM OR NOISE_C_BUILD_TESTS) AND NOT TARGET sodium)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET GLOBAL libsodium)
-    add_library(sodium INTERFACE IMPORTED GLOBAL)
-    target_link_libraries(sodium INTERFACE PkgConfig::LIBSODIUM)
+  if(NOT TARGET sodium)
+    if(NOISE_C_FIND_LIBSODIUM)
+      find_package(PkgConfig REQUIRED)
+      pkg_check_modules(LIBSODIUM REQUIRED IMPORTED_TARGET GLOBAL libsodium)
+      add_library(sodium INTERFACE IMPORTED GLOBAL)
+      target_link_libraries(sodium INTERFACE PkgConfig::LIBSODIUM)
+    elseif(NOISE_C_BUILD_TESTS)
+      # Test against the libsodium ESPHome ships next to this library, at the
+      # version idf_component.yml pins, with the fork's patches applied as the
+      # published packages have them
+      file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/idf_component.yml" _noise_c_sodium_line
+        REGEX "esphome/libsodium:")
+      string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" NOISE_C_LIBSODIUM_TAG
+        "${_noise_c_sodium_line}")
+      if(NOT NOISE_C_LIBSODIUM_TAG)
+        message(FATAL_ERROR "idf_component.yml does not pin esphome/libsodium")
+      endif()
+      include(FetchContent)
+      FetchContent_Declare(esphome_libsodium
+        GIT_REPOSITORY https://github.com/esphome-libs/libsodium
+        GIT_TAG ${NOISE_C_LIBSODIUM_TAG}
+        GIT_SHALLOW TRUE
+        # Reconfiguring runs the patch step again, so start from a clean tree
+        PATCH_COMMAND git -C libsodium checkout -q -- .
+        COMMAND git -C libsodium clean -qfd
+        COMMAND sh patches/apply.sh)
+      FetchContent_MakeAvailable(esphome_libsodium)
+    endif()
   endif()
 
   add_library(noise_c STATIC ${NOISE_C_SRCS})
