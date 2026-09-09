@@ -28,11 +28,45 @@ jmp_buf test_jump_back;
 const char *data_name = 0;
 int verbose = 0;
 
+/* Names given on the command line, and which of them matched a test */
+static int names_given = 0;
+static int names_matched = 0;
+
+/* True when the test was named on the command line, or none were */
+static int test_selected(int argc, char *argv[], const char *name)
+{
+    int index;
+    int any = 0;
+    int selected = 0;
+    for (index = 1; index < argc; ++index) {
+        if (!strcmp(argv[index], "--verbose"))
+            continue;
+        any = 1;
+        /* Every occurrence counts, so a name given twice is not stale */
+        if (!strcmp(argv[index], name)) {
+            ++names_matched;
+            selected = 1;
+        }
+    }
+    return any ? selected : 1;
+}
+
+#define run(func) \
+    do { \
+        if (test_selected(argc, argv, #func)) \
+            test(func); \
+    } while (0)
+
 int main(int argc, char *argv[])
 {
-    /* Parse the command-line arguments */
-    if (argc > 1 && !strcmp(argv[1], "--verbose"))
-        verbose = 1;
+    /* Parse the command-line arguments; --verbose may sit anywhere */
+    int index;
+    for (index = 1; index < argc; ++index) {
+        if (!strcmp(argv[index], "--verbose"))
+            verbose = 1;
+        else
+            ++names_given;
+    }
 
     if (noise_init_framework() != NOISE_ERROR_NONE) {
         fprintf(stderr, "Noise initialization failed\n");
@@ -40,24 +74,31 @@ int main(int argc, char *argv[])
     }
 
     /* Run all tests */
-    test(cipherstate);
-    test(dhstate);
-    test(errors);
-    test(handshakestate);
-    test(handshakestate_preset_ephemeral);
-    test(hashstate);
-    test(names);
-    test(patterns);
-    test(randstate);
-    test(symmetricstate);
+    run(cipherstate);
+    run(dhstate);
+    run(errors);
+    run(handshakestate);
+    run(handshakestate_preset_ephemeral);
+    run(hashstate);
+    run(names);
+    run(patterns);
+    run(randstate);
+    run(single_protocol);
+    run(small_build);
+    run(symmetricstate);
 
-    /* Report the results */
+    /* Report the results; every name given must have been a test, and a
+       stale name is reported alongside the failures rather than instead */
+    if (names_matched < names_given) {
+        fprintf(stderr, "%d of the names given matched no test\n",
+                names_given - names_matched);
+    }
     if (!test_failures) {
         printf("All tests succeeded\n");
     } else {
         printf("%d test%s failed\n", test_failures, test_failures == 1 ? "" : "s");
     }
-    return test_failures ? 1 : 0;
+    return (test_failures || names_matched < names_given) ? 1 : 0;
 }
 
 static int from_hex(char ch)

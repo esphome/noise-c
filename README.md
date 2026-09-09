@@ -51,6 +51,33 @@ unit tests cover
 the algorithms this fork ships. The vector runner skips a vector naming an
 algorithm the build leaves out and reports how many it skipped.
 
+Size switches for microcontroller builds
+----------------------------------------
+
+Three macros in `include/noise/defines.h` trade features for flash and RAM.
+All three are on by default, so a build that says nothing gets the library it
+always had; define one as 0 to leave that feature out. ESPHome turns all three
+off, since it builds its handshake from algorithm ids and never names one.
+
+* `NOISE_USE_PROTOCOL_NAME_TABLE` keeps the tables that turn algorithm names
+  into ids and back. With it off, `noise_protocol_name_to_id` and
+  `noise_protocol_id_to_name` handle only `Noise_NNpsk0_25519_ChaChaPoly_SHA256`
+  and answer `NOISE_ERROR_UNKNOWN_ID` or `NOISE_ERROR_UNKNOWN_NAME` for
+  anything else. The rest of the name API stays, and a link with
+  `-ffunction-sections -fdata-sections -Wl,--gc-sections`, which the ESP-IDF and
+  Arduino builds pass, drops the tables along with whatever no longer reaches
+  them. Turning the tables off pins the build to that one protocol, pattern
+  included: the switches for AES, SHA512, the two BLAKE2 hashes, Curve448 and
+  NewHope must stay off, the ones for SHA256, ChaCha20-Poly1305 and Curve25519
+  must stay on, and `NOISE_USE_FALLBACK` must be off as well, since fallback
+  needs the XX patterns named. The build stops with an `#error` if any of them
+  says otherwise. `noise_handshakestate_new_by_id` likewise accepts only
+  `NNpsk0` in that build.
+* `NOISE_USE_FALLBACK` and `NOISE_USE_HFS` keep the "fallback" and "hfs" pattern
+  modifiers. With them off, a pattern that asks for one is rejected with
+  `NOISE_ERROR_UNKNOWN_NAME`, and `noise_handshakestate_fallback` and
+  `noise_handshakestate_fallback_to` return `NOISE_ERROR_NOT_APPLICABLE`.
+
 This fork is maintained by the [ESPHome](https://esphome.io) project. To report
 bugs, contribute, or suggest improvements to it, please open an issue or pull
 request on [esphome-libs/noise-c](https://github.com/esphome-libs/noise-c/issues).

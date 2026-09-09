@@ -969,6 +969,7 @@ int noise_handshakestate_start(NoiseHandshakeState *state)
     return NOISE_ERROR_NONE;
 }
 
+#if NOISE_USE_FALLBACK
 /**
  * \brief Falls back to the "XXfallback" handshake pattern.
  *
@@ -1177,6 +1178,23 @@ int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pat
     /* Ready to go */
     return NOISE_ERROR_NONE;
 }
+#else /* !NOISE_USE_FALLBACK */
+
+int noise_handshakestate_fallback(NoiseHandshakeState *state)
+{
+    if (!state)
+        return NOISE_ERROR_INVALID_PARAM;
+    return NOISE_ERROR_NOT_APPLICABLE;
+}
+
+int noise_handshakestate_fallback_to(NoiseHandshakeState *state, const char *pattern)
+{
+    if (!state || !pattern)
+        return NOISE_ERROR_INVALID_PARAM;
+    return NOISE_ERROR_NOT_APPLICABLE;
+}
+
+#endif /* NOISE_USE_FALLBACK */
 
 /**
  * \brief Gets the next action the application should perform for

@@ -27,6 +27,7 @@ set(NOISE_C_SRCS
   "src/protocol/handshakestate.c"
   "src/protocol/hashstate.c"
   "src/protocol/internal.c"
+  "src/protocol/names-single.c"
   "src/protocol/names.c"
   "src/protocol/patterns.c"
   "src/protocol/rand_os.c"
@@ -126,6 +127,8 @@ else()
       "tests/unit/test-names.c"
       "tests/unit/test-patterns.c"
       "tests/unit/test-randstate.c"
+      "tests/unit/test-single-protocol.c"
+      "tests/unit/test-small-build.c"
       "tests/unit/test-symmetricstate.c"
     )
     add_executable(noise-c-test-vector
