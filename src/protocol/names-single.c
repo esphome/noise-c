@@ -30,12 +30,15 @@
 
 /* The tables are what let a build name any algorithm or pattern; without
    them only the protocol below can be built, and the fallback modifier,
-   which needs the XX patterns named, goes with them */
+   which needs the XX patterns named, goes with them. A test that compiles
+   this file inside a full build defines NOISE_NAMES_SINGLE_UNGUARDED. */
+#ifndef NOISE_NAMES_SINGLE_UNGUARDED
 #if NOISE_USE_AES || NOISE_USE_SHA512 || NOISE_USE_BLAKE2S || \
     NOISE_USE_BLAKE2B || NOISE_USE_CURVE448 || NOISE_USE_NEWHOPE || \
     !NOISE_USE_SHA256 || !NOISE_USE_CHACHAPOLY || !NOISE_USE_CURVE25519 || \
     NOISE_USE_FALLBACK
 #error "Without the name tables only Noise_NNpsk0_25519_ChaChaPoly_SHA256 can be built"
+#endif
 #endif
 
 /* On the ESP8266 read only data sits in DRAM unless it is asked to live in

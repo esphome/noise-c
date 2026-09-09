@@ -28,6 +28,10 @@ jmp_buf test_jump_back;
 const char *data_name = 0;
 int verbose = 0;
 
+/* Names given on the command line, and which of them matched a test */
+static int names_given = 0;
+static int names_matched = 0;
+
 /* True when the test was named on the command line, or none were */
 static int test_selected(int argc, char *argv[], const char *name)
 {
@@ -37,8 +41,10 @@ static int test_selected(int argc, char *argv[], const char *name)
         if (!strcmp(argv[index], "--verbose"))
             continue;
         any = 1;
-        if (!strcmp(argv[index], name))
+        if (!strcmp(argv[index], name)) {
+            ++names_matched;
             return 1;
+        }
     }
     return !any;
 }
@@ -56,6 +62,8 @@ int main(int argc, char *argv[])
     for (index = 1; index < argc; ++index) {
         if (!strcmp(argv[index], "--verbose"))
             verbose = 1;
+        else
+            ++names_given;
     }
 
     if (noise_init_framework() != NOISE_ERROR_NONE) {
@@ -77,9 +85,10 @@ int main(int argc, char *argv[])
     run(small_build);
     run(symmetricstate);
 
-    /* Report the results */
-    if (!test_count) {
-        fprintf(stderr, "no test matched the names given\n");
+    /* Report the results; every name given must have been a test */
+    if (names_matched < names_given) {
+        fprintf(stderr, "%d of the names given matched no test\n",
+                names_given - names_matched);
         return 1;
     }
     if (!test_failures) {

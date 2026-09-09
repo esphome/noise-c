@@ -21,6 +21,7 @@
  */
 
 #include "test-helpers.h"
+#include "protocol/internal.h"
 
 /* What the library promises once the size switches are off, which is the
    configuration every microcontroller build uses; with the switches on
@@ -77,11 +78,16 @@ void test_small_build(void)
 #endif
 
 #if !NOISE_USE_HFS
-    /* A pattern that asks for hybrid forward secrecy is unknown */
+    /* The hfs modifier is unknown to the pattern expander itself, not
+       only to a name parser that may have no tables */
     {
-        static const char hfs[] = "Noise_NNhfs_25519+NewHope_ChaChaPoly_SHA256";
-        compare(noise_protocol_name_to_id(&id, hfs, strlen(hfs)),
+        uint8_t pattern[NOISE_MAX_TOKENS];
+        int modifier = NOISE_MODIFIER_HFS;
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, &modifier, 1),
                 NOISE_ERROR_UNKNOWN_NAME);
+        modifier = NOISE_MODIFIER_PSK0;
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, &modifier, 1),
+                NOISE_ERROR_NONE);
     }
 #endif
 
