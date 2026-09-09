@@ -106,7 +106,7 @@ To build the library on a host and run the tests, type the following:
 \code
 $ cmake -S . -B build -DNOISE_C_BUILD_TESTS=ON
 $ cmake --build build
-$ ctest --test-dir build
+$ ctest --test-dir build   # or cd build && ctest before CMake 3.20
 \endcode
 
 The tests fetch ESPHome's libsodium fork at the pinned version and apply
