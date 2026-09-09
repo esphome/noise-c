@@ -93,11 +93,13 @@
    mbedTLS 4 puts it, nothing new is linked and the flash is free. Through the
    ESP32 SHA peripheral driver every hash takes and releases the engine, and a
    handshake is many short hashes, so it costs more time than the hardware
-   saves. A hash the platform refuses, for example when it is out of memory
-   or PSA is not initialised, is reported as a zero digest for that hash;
-   the layers above then produce a wrong result rather than an error, so a
-   handshake fails on the peer's MAC and noise_hashstate_pbkdf2 hands back a
-   wrong key. */
+   saves. Creating the hash state can fail, with PSA not initialising for
+   instance, and that is returned as NOISE_ERROR_NO_MEMORY. A hash the
+   platform refuses once the state exists, which takes the platform running
+   out of memory, is reported as a zero digest for that hash; the layers
+   above then produce a wrong result rather than an error, so a handshake
+   fails on the peer's MAC and noise_hashstate_pbkdf2 hands back a wrong
+   key. */
 #ifndef NOISE_USE_MBEDTLS_SHA256
 #define NOISE_USE_MBEDTLS_SHA256 0
 #endif
