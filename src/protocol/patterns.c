@@ -691,6 +691,8 @@ int noise_pattern_expand
         return NOISE_ERROR_INVALID_LENGTH;
     pattern_len = pattern_end + 1 - base_pattern;
     memcpy(pattern, base_pattern, pattern_len);
+    /* the caller copies the whole buffer into the handshake state */
+    memset(pattern + pattern_len, 0, NOISE_MAX_TOKENS - pattern_len);
 
     /* Fetch the starting pattern flags */
     flags = ((NoisePatternFlags_t)(pattern[0])) |
@@ -700,6 +702,7 @@ int noise_pattern_expand
     err = NOISE_ERROR_NONE;
     for (index = 0; index < num_modifiers &&
                     err == NOISE_ERROR_NONE; ++index) {
+        memset(temp, 0, sizeof(temp));
         switch (modifiers[index]) {
 #if NOISE_USE_FALLBACK
         case NOISE_MODIFIER_FALLBACK:
