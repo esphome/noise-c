@@ -25,6 +25,7 @@
  * they return is hashed into the handshake, so the two must not drift. */
 
 #include "test-helpers.h"
+#include "protocol/internal.h"
 
 /* The reduced implementations, built a second time under the names below,
    inside a full build its configuration guard would otherwise refuse */
@@ -33,9 +34,12 @@
 #define NOISE_NAMES_SINGLE_UNGUARDED
 #define noise_protocol_id_to_name single_id_to_name
 #define noise_protocol_name_to_id single_name_to_id
+#define noise_pattern_expand single_pattern_expand
 #include "protocol/names-single.c"
+#include "protocol/patterns-single.c"
 #undef noise_protocol_id_to_name
 #undef noise_protocol_name_to_id
+#undef noise_pattern_expand
 
 /* On the protocol ESPHome speaks, the two must answer identically */
 static void compare_id_to_name(const NoiseProtocolId *id)
@@ -169,4 +173,30 @@ void test_single_protocol(void)
     compare(single_name_to_id(&id, "Noise_XX_25519_ChaChaPoly_SHA256",
                               strlen("Noise_XX_25519_ChaChaPoly_SHA256")),
             NOISE_ERROR_UNKNOWN_NAME);
+    /* The fixed NNpsk0 expansion must be what the table version builds,
+       the whole buffer included: both clear the bytes past the end marker,
+       so different poisons must come out identical. With the tables off
+       both names resolve to patterns-single.c; the full builds are what
+       compare the two. */
+    {
+        uint8_t table_tokens[NOISE_MAX_TOKENS];
+        uint8_t single_tokens[NOISE_MAX_TOKENS];
+        int psk0 = NOISE_MODIFIER_PSK0;
+        int psk0_psk1[2] = { NOISE_MODIFIER_PSK0, NOISE_MODIFIER_PSK1 };
+        int psk1 = NOISE_MODIFIER_PSK1;
+        memset(table_tokens, 0xAA, sizeof(table_tokens));
+        memset(single_tokens, 0x55, sizeof(single_tokens));
+        compare(noise_pattern_expand(table_tokens, NOISE_PATTERN_NN, &psk0, 1),
+                NOISE_ERROR_NONE);
+        compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, &psk0, 1),
+                NOISE_ERROR_NONE);
+        compare(table_tokens[7], NOISE_TOKEN_END);
+        compare_blocks(single_tokens, NOISE_MAX_TOKENS, table_tokens, NOISE_MAX_TOKENS);
+        compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, &psk1, 1),
+                NOISE_ERROR_UNKNOWN_NAME);
+        compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, psk0_psk1, 2),
+                NOISE_ERROR_UNKNOWN_NAME);
+        compare(single_pattern_expand(single_tokens, NOISE_PATTERN_XX, &psk0, 1),
+                NOISE_ERROR_UNKNOWN_NAME);
+    }
 }

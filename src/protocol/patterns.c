@@ -475,20 +475,11 @@ const uint8_t *noise_pattern_lookup(int id)
 }
 
 /**
- * \brief Reverses the local and remote flags for a pattern.
- *
- * \param flags The flags, assuming that the initiator is "local".
- * \return The reversed flags, with the responder now being "local".
- */
-NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_t flags)
-{
-    return ((flags >> 8) & 0x00FF) | ((flags << 8) & 0xFF00);
-}
-
-/**
  * \brief Length of the flags in the pattern header.
  */
 #define NOISE_PATTERN_HEADER_LEN 2
+
+#if NOISE_USE_FALLBACK || NOISE_USE_HFS || NOISE_USE_PROTOCOL_NAME_TABLE
 
 /**
  * \brief Puts a token into an output pattern while applying a modifier.
@@ -503,6 +494,8 @@ static int noise_pattern_put_token(int err, uint8_t output[NOISE_MAX_TOKENS],
     output[(*index)++] = token;
     return NOISE_ERROR_NONE;
 }
+
+#endif /* NOISE_USE_FALLBACK || NOISE_USE_HFS || NOISE_USE_PROTOCOL_NAME_TABLE */
 
 #if NOISE_USE_FALLBACK
 /**
@@ -610,6 +603,8 @@ int noise_pattern_expand_hfs
 
 #endif /* NOISE_USE_HFS */
 
+#if NOISE_USE_PROTOCOL_NAME_TABLE
+
 /**
  * \brief Expands a pattern using a "pskN" modifier.
  */
@@ -700,6 +695,8 @@ int noise_pattern_expand
         return NOISE_ERROR_INVALID_LENGTH;
     pattern_len = pattern_end + 1 - base_pattern;
     memcpy(pattern, base_pattern, pattern_len);
+    /* the caller copies the whole buffer into the handshake state */
+    memset(pattern + pattern_len, 0, NOISE_MAX_TOKENS - pattern_len);
 
     /* Fetch the starting pattern flags */
     flags = ((NoisePatternFlags_t)(pattern[0])) |
@@ -709,6 +706,7 @@ int noise_pattern_expand
     err = NOISE_ERROR_NONE;
     for (index = 0; index < num_modifiers &&
                     err == NOISE_ERROR_NONE; ++index) {
+        memset(temp, 0, sizeof(temp));
         switch (modifiers[index]) {
 #if NOISE_USE_FALLBACK
         case NOISE_MODIFIER_FALLBACK:
@@ -737,3 +735,5 @@ int noise_pattern_expand
     }
     return err;
 }
+
+#endif /* NOISE_USE_PROTOCOL_NAME_TABLE; patterns-single.c has the other */
