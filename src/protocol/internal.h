@@ -54,13 +54,14 @@ extern "C" {
 #define NOISE_PSK_LEN 32
 
 /**
- * \brief Maximum number of tokens in a message pattern.
+ * \brief Length in bytes of an expanded message pattern: two flag bytes,
+ * the tokens and the end marker.
  *
- * Two flag bytes, the tokens and the end marker. Without the name tables
- * the one pattern is NNpsk0, eight bytes, so every handshake state and the
- * stack buffer it is built from shrink to that.
+ * Without the name tables and hfs the one pattern is NNpsk0, eight bytes,
+ * so every handshake state and the stack buffer it is built from shrink to
+ * that; hfs would add tokens NNpsk0 has no room for.
  */
-#if NOISE_USE_PROTOCOL_NAME_TABLE
+#if NOISE_USE_PROTOCOL_NAME_TABLE || NOISE_USE_HFS
 #define NOISE_MAX_TOKENS 64
 #else
 #define NOISE_MAX_TOKENS 8
