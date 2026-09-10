@@ -52,6 +52,14 @@ void test_small_build(void)
                  NOISE_ROLE_INITIATOR),
             NOISE_ERROR_UNKNOWN_NAME);
     verify(state == NULL);
+    /* The token buffer is cut down to the one pattern, end marker included */
+    {
+        uint8_t pattern[NOISE_MAX_TOKENS];
+        int modifier = NOISE_MODIFIER_PSK0;
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, &modifier, 1),
+                NOISE_ERROR_NONE);
+        compare(pattern[NOISE_MAX_TOKENS - 1], NOISE_TOKEN_END);
+    }
     id.pattern_id = NOISE_PATTERN_XX;
     id.modifier_ids[0] = NOISE_MODIFIER_NONE;
     state = (NoiseHandshakeState *)8;
