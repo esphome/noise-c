@@ -29,6 +29,7 @@
    one pattern. */
 
 #include "protocol/internal.h"
+#include <string.h>
 
 #if !NOISE_USE_PROTOCOL_NAME_TABLE
 
@@ -54,6 +55,8 @@ int noise_pattern_expand
     pattern[5] = NOISE_TOKEN_E;
     pattern[6] = NOISE_TOKEN_EE;
     pattern[7] = NOISE_TOKEN_END;
+    /* the caller copies the whole buffer into the handshake state */
+    memset(pattern + 8, 0, NOISE_MAX_TOKENS - 8);
     return NOISE_ERROR_NONE;
 }
 

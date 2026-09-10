@@ -23,14 +23,13 @@
 #include "protocol/internal.h"
 #include <string.h>
 
-#define FLAGS(x)    ((uint8_t)((x) & 0xFF)), ((uint8_t)(((x) >> 8) & 0xFF))
-
 /**
  * \file patterns.c
  * \brief Defines the handshake message patterns.
  */
 
 /** @cond */
+#define FLAGS(x)    ((uint8_t)((x) & 0xFF)), ((uint8_t)(((x) >> 8) & 0xFF))
 /** @endcond */
 
 /**
@@ -476,10 +475,13 @@ const uint8_t *noise_pattern_lookup(int id)
 }
 
 /**
- * \brief Puts a token into an output pattern while applying a modifier.
+ * \brief Length of the flags in the pattern header.
  */
 #define NOISE_PATTERN_HEADER_LEN 2
 
+/**
+ * \brief Puts a token into an output pattern while applying a modifier.
+ */
 static int noise_pattern_put_token(int err, uint8_t output[NOISE_MAX_TOKENS],
                                    unsigned *index, uint8_t token)
 {
