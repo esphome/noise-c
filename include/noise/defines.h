@@ -87,6 +87,11 @@
 #define NOISE_USE_HFS 1
 #endif
 
+/* The build that can use one pattern only, NNpsk0: no name tables and no
+   hfs. Everything that sizes itself to that pattern tests this, not the
+   switches it is made of. */
+#define NOISE_SINGLE_PATTERN (!NOISE_USE_PROTOCOL_NAME_TABLE && !NOISE_USE_HFS)
+
 #if NOISE_USE_REFERENCE_BACKEND
 
 #ifndef NOISE_USE_REFERENCE_CHACHA

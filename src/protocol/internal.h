@@ -54,9 +54,18 @@ extern "C" {
 #define NOISE_PSK_LEN 32
 
 /**
- * \brief Maximum number of tokens in a message pattern.
+ * \brief Length in bytes of an expanded message pattern: two flag bytes,
+ * the tokens and the end marker.
+ *
+ * In the single pattern build the one pattern is NNpsk0, eight bytes, so
+ * every handshake state and the stack buffer it is built from shrink to
+ * that.
  */
+#if NOISE_SINGLE_PATTERN
+#define NOISE_MAX_TOKENS 8
+#else
 #define NOISE_MAX_TOKENS 64
+#endif
 
 /**
  * \brief Internal structure of the NoiseCipherState type.
