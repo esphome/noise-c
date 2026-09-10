@@ -479,6 +479,8 @@ const uint8_t *noise_pattern_lookup(int id)
  */
 #define NOISE_PATTERN_HEADER_LEN 2
 
+#if NOISE_USE_FALLBACK || NOISE_USE_HFS || NOISE_USE_PROTOCOL_NAME_TABLE
+
 /**
  * \brief Puts a token into an output pattern while applying a modifier.
  */
@@ -492,6 +494,8 @@ static int noise_pattern_put_token(int err, uint8_t output[NOISE_MAX_TOKENS],
     output[(*index)++] = token;
     return NOISE_ERROR_NONE;
 }
+
+#endif /* NOISE_USE_FALLBACK || NOISE_USE_HFS || NOISE_USE_PROTOCOL_NAME_TABLE */
 
 #if NOISE_USE_FALLBACK
 /**
