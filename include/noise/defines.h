@@ -69,7 +69,8 @@
 #endif
 
 /* Three switches for builds that want the library smaller, all on by default
-   so nothing changes unless the build asks. ESPHome turns them off. */
+   so a build of the sources gets the library it always had; the README says
+   which builds turn them off. */
 
 /* Format protocol names from the id tables. Off, noise_protocol_id_to_name
    knows the one protocol ESPHome speaks and the tables are left out, which
@@ -85,6 +86,11 @@
 #ifndef NOISE_USE_HFS
 #define NOISE_USE_HFS 1
 #endif
+
+/* The build that can use one pattern only, NNpsk0: no name tables and no
+   hfs. Everything that sizes itself to that pattern tests this, not the
+   switches it is made of. */
+#define NOISE_SINGLE_PATTERN (!NOISE_USE_PROTOCOL_NAME_TABLE && !NOISE_USE_HFS)
 
 #if NOISE_USE_REFERENCE_BACKEND
 

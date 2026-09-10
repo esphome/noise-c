@@ -1,6 +1,6 @@
 {
     "name": "noise-c",
-    "version": "0.1.27",
+    "version": "0.1.28",
     "description": "noise-c",
     "keywords": "noise-c",
     "repository": {
@@ -14,7 +14,12 @@
     ],
     "build": {
         "includeDir": "include",
-        "srcDir": "src"
+        "srcDir": "src",
+        "flags": [
+            "-DNOISE_USE_PROTOCOL_NAME_TABLE=0",
+            "-DNOISE_USE_FALLBACK=0",
+            "-DNOISE_USE_HFS=0"
+        ]
     },
     "dependencies": [
         {

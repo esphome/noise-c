@@ -45,6 +45,9 @@ if(ESP_PLATFORM)
     INCLUDE_DIRS "include" "src"
     REQUIRES esphome__libsodium
   )
+  # The same three switches library.json turns off for PlatformIO builds
+  target_compile_definitions(${COMPONENT_LIB} PRIVATE
+    NOISE_USE_PROTOCOL_NAME_TABLE=0 NOISE_USE_FALLBACK=0 NOISE_USE_HFS=0)
 else()
   cmake_minimum_required(VERSION 3.13)
   if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
