@@ -58,8 +58,9 @@ Three macros in `include/noise/defines.h` trade features for flash and RAM.
 All three are on by default, so a build that says nothing gets the library it
 always had; define one as 0 to leave that feature out. The packaged builds turn
 all three off without asking: `library.json` for the PlatformIO library, and
-the ESP-IDF component's `CMakeLists.txt` for the Espressif registry. A CMake
-build of the sources keeps the defaults, so the tests cover the whole library.
+`CMakeLists.txt` for any ESP-IDF component build, from the Espressif registry
+or a local copy. A CMake build of the sources on a host keeps the defaults, so
+the tests cover the whole library.
 ESPHome builds its handshake from algorithm ids and never names one.
 
 * `NOISE_USE_PROTOCOL_NAME_TABLE` keeps the tables that turn algorithm names
