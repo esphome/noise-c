@@ -69,9 +69,10 @@ off, since it builds its handshake from algorithm ids and never names one.
   them. Turning the tables off pins the build to that one protocol, pattern
   included: the switches for AES, SHA512, the two BLAKE2 hashes, Curve448 and
   NewHope must stay off, the ones for SHA256, ChaCha20-Poly1305 and Curve25519
-  must stay on, and `NOISE_USE_FALLBACK` must be off as well, since fallback
-  needs the XX patterns named. The build stops with an `#error` if any of them
-  says otherwise. `noise_handshakestate_new_by_id` likewise accepts only
+  must stay on, and `NOISE_USE_FALLBACK` and `NOISE_USE_HFS` must be off as
+  well: fallback needs the XX patterns named and the one pattern the build
+  expands has no hfs. The build stops with an `#error` if any of them says
+  otherwise. `noise_handshakestate_new_by_id` likewise accepts only
   `NNpsk0` in that build, and its expanded token list is a constant, so the
   base patterns and the modifier code go with the tables.
 * `NOISE_USE_FALLBACK` and `NOISE_USE_HFS` keep the "fallback" and "hfs" pattern
