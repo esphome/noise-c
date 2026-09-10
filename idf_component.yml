@@ -1,5 +1,5 @@
 description: noise-c
-version: "0.1.29"
+version: "0.1.30"
 repository: https://github.com/esphome/noise-c.git
 dependencies:
   esphome/libsodium: "1.10021.11"
