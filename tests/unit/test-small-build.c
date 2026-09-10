@@ -60,13 +60,17 @@ void test_small_build(void)
     verify(state == NULL);
     id.modifier_ids[0] = NOISE_MODIFIER_PSK1;
     id.modifier_ids[1] = NOISE_MODIFIER_NONE;
+    state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_id
                 (&state, &id, NOISE_ROLE_INITIATOR),
             NOISE_ERROR_UNKNOWN_ID);
+    verify(state == NULL);
     id.modifier_ids[0] = NOISE_MODIFIER_NONE;
+    state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_id
                 (&state, &id, NOISE_ROLE_INITIATOR),
             NOISE_ERROR_UNKNOWN_ID);
+    verify(state == NULL);
     id.pattern_id = NOISE_PATTERN_XX;
     id.modifier_ids[0] = NOISE_MODIFIER_NONE;
     state = (NoiseHandshakeState *)8;
