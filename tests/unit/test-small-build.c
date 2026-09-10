@@ -52,6 +52,38 @@ void test_small_build(void)
                  NOISE_ROLE_INITIATOR),
             NOISE_ERROR_UNKNOWN_NAME);
     verify(state == NULL);
+    id.modifier_ids[1] = NOISE_MODIFIER_PSK1;
+    state = (NoiseHandshakeState *)8;
+    compare(noise_handshakestate_new_by_id
+                (&state, &id, NOISE_ROLE_INITIATOR),
+            NOISE_ERROR_UNKNOWN_ID);
+    verify(state == NULL);
+    id.modifier_ids[0] = NOISE_MODIFIER_PSK1;
+    id.modifier_ids[1] = NOISE_MODIFIER_NONE;
+    state = (NoiseHandshakeState *)8;
+    compare(noise_handshakestate_new_by_id
+                (&state, &id, NOISE_ROLE_INITIATOR),
+            NOISE_ERROR_UNKNOWN_ID);
+    verify(state == NULL);
+    id.modifier_ids[0] = NOISE_MODIFIER_NONE;
+    state = (NoiseHandshakeState *)8;
+    compare(noise_handshakestate_new_by_id
+                (&state, &id, NOISE_ROLE_INITIATOR),
+            NOISE_ERROR_UNKNOWN_ID);
+    verify(state == NULL);
+    /* Those ids are refused one layer up, in names-single.c; the expander
+       is what holds the modifier count to one for the constructor */
+    {
+        uint8_t pattern[NOISE_MAX_TOKENS];
+        int mods[2] = { NOISE_MODIFIER_PSK0, NOISE_MODIFIER_PSK1 };
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, mods, 2),
+                NOISE_ERROR_UNKNOWN_NAME);
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, mods, 0),
+                NOISE_ERROR_UNKNOWN_NAME);
+        compare(noise_pattern_expand(pattern, NOISE_PATTERN_NN, mods, 1),
+                NOISE_ERROR_NONE);
+    }
+
     id.pattern_id = NOISE_PATTERN_XX;
     id.modifier_ids[0] = NOISE_MODIFIER_NONE;
     state = (NoiseHandshakeState *)8;

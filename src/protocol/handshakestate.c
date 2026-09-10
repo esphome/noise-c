@@ -117,6 +117,7 @@ static int noise_handshakestate_new
     int remote_dh_role;
 
     /* Locate the information for the current handshake pattern */
+#if NOISE_USE_PROTOCOL_NAME_TABLE
     num_modifiers = 0;
     while (num_modifiers < NOISE_MAX_MODIFIER_IDS &&
                 symmetric->id.modifier_ids[num_modifiers] != 0) {
@@ -132,6 +133,12 @@ static int noise_handshakestate_new
         }
         ++num_modifiers;
     }
+#else
+    /* The one pattern this build expands has exactly one modifier, psk0,
+       which noise_pattern_expand checks; a second one makes the id unknown */
+    num_modifiers = symmetric->id.modifier_ids[1] == NOISE_MODIFIER_NONE ? 1 : 2;
+    extra_reqs = NOISE_REQ_PSK;
+#endif
     if (noise_pattern_expand(tokens, symmetric->id.pattern_id,
                              symmetric->id.modifier_ids, num_modifiers)
             != NOISE_ERROR_NONE) {
