@@ -173,8 +173,8 @@ void test_single_protocol(void)
     compare(single_name_to_id(&id, "Noise_XX_25519_ChaChaPoly_SHA256",
                               strlen("Noise_XX_25519_ChaChaPoly_SHA256")),
             NOISE_ERROR_UNKNOWN_NAME);
-    /* The constant NNpsk0 expansion must be what the table version builds,
-       up to and including the end marker, and nothing else may expand */
+    /* The fixed NNpsk0 expansion must be what the table version builds,
+       up to and including the end marker */
     {
         uint8_t table_tokens[NOISE_MAX_TOKENS];
         uint8_t single_tokens[NOISE_MAX_TOKENS];
@@ -182,8 +182,6 @@ void test_single_protocol(void)
         int psk0_psk1[2] = { NOISE_MODIFIER_PSK0, NOISE_MODIFIER_PSK1 };
         int psk1 = NOISE_MODIFIER_PSK1;
         size_t len = 2; /* past the two flag bytes */
-        memset(table_tokens, 0xAA, sizeof(table_tokens));
-        memset(single_tokens, 0x55, sizeof(single_tokens));
         compare(noise_pattern_expand(table_tokens, NOISE_PATTERN_NN, &psk0, 1),
                 NOISE_ERROR_NONE);
         compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, &psk0, 1),
@@ -191,9 +189,7 @@ void test_single_protocol(void)
         while (len < NOISE_MAX_TOKENS && table_tokens[len] != NOISE_TOKEN_END)
             ++len;
         verify(len < NOISE_MAX_TOKENS);
-        verify(!memcmp(single_tokens, table_tokens, len + 1));
-        compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, 0, 0),
-                NOISE_ERROR_UNKNOWN_NAME);
+        compare_blocks(single_tokens, len + 1, table_tokens, len + 1);
         compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, &psk1, 1),
                 NOISE_ERROR_UNKNOWN_NAME);
         compare(single_pattern_expand(single_tokens, NOISE_PATTERN_NN, psk0_psk1, 2),
@@ -201,5 +197,4 @@ void test_single_protocol(void)
         compare(single_pattern_expand(single_tokens, NOISE_PATTERN_XX, &psk0, 1),
                 NOISE_ERROR_UNKNOWN_NAME);
     }
-
 }

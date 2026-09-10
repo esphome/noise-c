@@ -23,13 +23,14 @@
 #include "protocol/internal.h"
 #include <string.h>
 
+#define FLAGS(x)    ((uint8_t)((x) & 0xFF)), ((uint8_t)(((x) >> 8) & 0xFF))
+
 /**
  * \file patterns.c
  * \brief Defines the handshake message patterns.
  */
 
 /** @cond */
-#define FLAGS(x)    ((uint8_t)((x) & 0xFF)), ((uint8_t)(((x) >> 8) & 0xFF))
 /** @endcond */
 
 /**
@@ -475,24 +476,10 @@ const uint8_t *noise_pattern_lookup(int id)
 }
 
 /**
- * \brief Reverses the local and remote flags for a pattern.
- *
- * \param flags The flags, assuming that the initiator is "local".
- * \return The reversed flags, with the responder now being "local".
- */
-NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_t flags)
-{
-    return ((flags >> 8) & 0x00FF) | ((flags << 8) & 0xFF00);
-}
-
-/**
- * \brief Length of the flags in the pattern header.
+ * \brief Puts a token into an output pattern while applying a modifier.
  */
 #define NOISE_PATTERN_HEADER_LEN 2
 
-/**
- * \brief Puts a token into an output pattern while applying a modifier.
- */
 static int noise_pattern_put_token(int err, uint8_t output[NOISE_MAX_TOKENS],
                                    unsigned *index, uint8_t token)
 {
@@ -610,6 +597,8 @@ int noise_pattern_expand_hfs
 
 #endif /* NOISE_USE_HFS */
 
+#if NOISE_USE_PROTOCOL_NAME_TABLE
+
 /**
  * \brief Expands a pattern using a "pskN" modifier.
  */
@@ -660,8 +649,6 @@ int noise_pattern_expand_psk
         return NOISE_ERROR_UNKNOWN_NAME;
     return err;
 }
-
-#if NOISE_USE_PROTOCOL_NAME_TABLE
 
 /**
  * \brief Expands a base pattern using a set of modifiers.

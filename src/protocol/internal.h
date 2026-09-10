@@ -696,7 +696,16 @@ typedef uint16_t NoisePatternFlags_t;
 /** @endcond */
 
 const uint8_t *noise_pattern_lookup(int id);
-NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_t flags);
+/**
+ * \brief Reverses the local and remote flags for a pattern.
+ *
+ * \param flags The flags, assuming that the initiator is "local".
+ * \return The reversed flags, with the responder now being "local".
+ */
+static inline NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_t flags)
+{
+    return ((flags >> 8) & 0x00FF) | ((flags << 8) & 0xFF00);
+}
 int noise_pattern_expand
     (uint8_t pattern[NOISE_MAX_TOKENS], int pattern_id,
      const int *modifiers, size_t num_modifiers);
