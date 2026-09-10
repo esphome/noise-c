@@ -25,7 +25,7 @@
         {
             "owner": "esphome",
             "name": "libsodium",
-            "version": "1.10021.8"
+            "version": "1.10021.9"
         }
     ]
 }
