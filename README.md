@@ -72,7 +72,8 @@ off, since it builds its handshake from algorithm ids and never names one.
   must stay on, and `NOISE_USE_FALLBACK` must be off as well, since fallback
   needs the XX patterns named. The build stops with an `#error` if any of them
   says otherwise. `noise_handshakestate_new_by_id` likewise accepts only
-  `NNpsk0` in that build.
+  `NNpsk0` in that build, and its expanded token list is a constant, so the
+  base patterns and the modifier code go with the tables.
 * `NOISE_USE_FALLBACK` and `NOISE_USE_HFS` keep the "fallback" and "hfs" pattern
   modifiers. With them off, a pattern that asks for one is rejected with
   `NOISE_ERROR_UNKNOWN_NAME`, and `noise_handshakestate_fallback` and

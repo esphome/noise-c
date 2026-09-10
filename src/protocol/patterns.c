@@ -661,6 +661,8 @@ int noise_pattern_expand_psk
     return err;
 }
 
+#if NOISE_USE_PROTOCOL_NAME_TABLE
+
 /**
  * \brief Expands a base pattern using a set of modifiers.
  *
@@ -737,3 +739,5 @@ int noise_pattern_expand
     }
     return err;
 }
+
+#endif /* NOISE_USE_PROTOCOL_NAME_TABLE; patterns-single.c has the other */
