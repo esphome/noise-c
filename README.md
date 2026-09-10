@@ -56,8 +56,10 @@ Size switches for microcontroller builds
 
 Three macros in `include/noise/defines.h` trade features for flash and RAM.
 All three are on by default, so a build that says nothing gets the library it
-always had; define one as 0 to leave that feature out. ESPHome turns all three
-off, since it builds its handshake from algorithm ids and never names one.
+always had; define one as 0 to leave that feature out. `library.json` turns all
+three off, so a build that takes the library from the PlatformIO or Espressif
+registry gets the small library without asking; ESPHome builds its handshake
+from algorithm ids and never names one.
 
 * `NOISE_USE_PROTOCOL_NAME_TABLE` keeps the tables that turn algorithm names
   into ids and back. With it off, `noise_protocol_name_to_id` and

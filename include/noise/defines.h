@@ -69,7 +69,8 @@
 #endif
 
 /* Three switches for builds that want the library smaller, all on by default
-   so nothing changes unless the build asks. ESPHome turns them off. */
+   so nothing changes unless the build asks. library.json turns them off, so
+   every build that takes the library from a registry gets the small one. */
 
 /* Format protocol names from the id tables. Off, noise_protocol_id_to_name
    knows the one protocol ESPHome speaks and the tables are left out, which
