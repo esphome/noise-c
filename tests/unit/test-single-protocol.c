@@ -175,7 +175,9 @@ void test_single_protocol(void)
             NOISE_ERROR_UNKNOWN_NAME);
     /* The fixed NNpsk0 expansion must be what the table version builds,
        the whole buffer included: both clear the bytes past the end marker,
-       so different poisons must come out identical */
+       so different poisons must come out identical. With the tables off
+       both names resolve to patterns-single.c; the full builds are what
+       compare the two. */
     {
         uint8_t table_tokens[NOISE_MAX_TOKENS];
         uint8_t single_tokens[NOISE_MAX_TOKENS];
