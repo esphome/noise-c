@@ -96,6 +96,16 @@ static int noise_symmetricstate_new
 
     /* Initialize the chaining key "ck" and the handshake hash "h" from
        the protocol name.  If the name is too long, hash it down first */
+#if !NOISE_USE_PROTOCOL_NAME_TABLE
+    if (!name) {
+        /* the one protocol this build speaks; its name is longer than the
+           hash, so the state starts from the digest kept in names-single.c */
+        noise_single_protocol_init_hash(new_state->h);
+        memcpy(new_state->ck, new_state->h, hash_len);
+        *state = new_state;
+        return NOISE_ERROR_NONE;
+    }
+#endif
     name_len = strlen(name);
     if (name_len <= hash_len) {
         memcpy(new_state->h, name, name_len);
@@ -134,7 +144,9 @@ static int noise_symmetricstate_new
 int noise_symmetricstate_new_by_id
     (NoiseSymmetricState **state, const NoiseProtocolId *id)
 {
+#if NOISE_USE_PROTOCOL_NAME_TABLE
     char name[NOISE_MAX_PROTOCOL_NAME];
+#endif
     int err;
 
     /* Validate the parameters */
@@ -144,6 +156,13 @@ int noise_symmetricstate_new_by_id
     if (!id)
         return NOISE_ERROR_INVALID_PARAM;
 
+#if !NOISE_USE_PROTOCOL_NAME_TABLE
+    /* No name to format: the state starts from the constant digest */
+    err = noise_single_protocol_check(id);
+    if (err != NOISE_ERROR_NONE)
+        return err;
+    return noise_symmetricstate_new(state, 0, id);
+#else
     /* Format the full protocol name from the identifiers.  We need the
        full name because the handshake hash is initialized from the name */
     err = noise_protocol_id_to_name(name, sizeof(name), id);
@@ -152,6 +171,7 @@ int noise_symmetricstate_new_by_id
 
     /* Create the SymmetricState object */
     return noise_symmetricstate_new(state, name, id);
+#endif
 }
 
 /**

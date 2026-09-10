@@ -74,6 +74,47 @@
 static const char noise_single_protocol_name[] NOISE_NAME_IN_FLASH =
     "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
 
+/* SHA256 of the name above. The name is longer than the hash, so a
+   SymmetricState starts from its digest; keeping the digest saves the
+   hash and, for a build that only ever names the protocol by id, the
+   name and its formatter as well. test-single-protocol.c checks it. */
+static const uint8_t noise_single_protocol_hash[32] NOISE_NAME_IN_FLASH = {
+    0xf0, 0xb8, 0x90, 0x82, 0x6f, 0xb8, 0xe6, 0x58,
+    0x4a, 0xf6, 0x94, 0x8d, 0x22, 0x71, 0x69, 0xc3,
+    0x81, 0xc9, 0xed, 0x6a, 0x4c, 0x1c, 0x90, 0xdf,
+    0x4b, 0x9f, 0xf4, 0x54, 0xfa, 0x94, 0x7f, 0x7b
+};
+
+void noise_single_protocol_init_hash(uint8_t *h)
+{
+    noise_name_copy(h, noise_single_protocol_hash,
+                    sizeof(noise_single_protocol_hash));
+}
+
+int noise_single_protocol_check(const NoiseProtocolId *id)
+{
+    size_t slot;
+
+    if (id->prefix_id != NOISE_PREFIX_STANDARD ||
+            id->pattern_id != NOISE_PATTERN_NN ||
+            id->modifier_ids[0] != NOISE_MODIFIER_PSK0 ||
+            id->dh_id != NOISE_DH_CURVE25519 ||
+            id->cipher_id != NOISE_CIPHER_CHACHAPOLY ||
+            id->hash_id != NOISE_HASH_SHA256 ||
+            id->hybrid_id != NOISE_DH_NONE)
+        return NOISE_ERROR_UNKNOWN_ID;
+    /* psk0 is the only modifier; every other slot must be empty */
+    for (slot = 1; slot < NOISE_MAX_MODIFIER_IDS; ++slot) {
+        if (id->modifier_ids[slot] != NOISE_MODIFIER_NONE)
+            return NOISE_ERROR_UNKNOWN_ID;
+    }
+    for (slot = 0; slot < sizeof(id->reserved) / sizeof(id->reserved[0]); ++slot) {
+        if (id->reserved[slot])
+            return NOISE_ERROR_UNKNOWN_ID;
+    }
+    return NOISE_ERROR_NONE;
+}
+
 int noise_protocol_name_to_id
     (NoiseProtocolId *id, const char *name, size_t name_len)
 {
@@ -95,8 +136,6 @@ int noise_protocol_name_to_id
 int noise_protocol_id_to_name
     (char *name, size_t name_len, const NoiseProtocolId *id)
 {
-    size_t slot;
-
     if (!id) {
         if (name && name_len)
             *name = '\0';
@@ -109,28 +148,9 @@ int noise_protocol_id_to_name
             *name = '\0';
         return NOISE_ERROR_INVALID_LENGTH;
     }
-    if (id->prefix_id != NOISE_PREFIX_STANDARD ||
-            id->pattern_id != NOISE_PATTERN_NN ||
-            id->modifier_ids[0] != NOISE_MODIFIER_PSK0 ||
-            id->dh_id != NOISE_DH_CURVE25519 ||
-            id->cipher_id != NOISE_CIPHER_CHACHAPOLY ||
-            id->hash_id != NOISE_HASH_SHA256 ||
-            id->hybrid_id != NOISE_DH_NONE) {
+    if (noise_single_protocol_check(id) != NOISE_ERROR_NONE) {
         *name = '\0';
         return NOISE_ERROR_UNKNOWN_ID;
-    }
-    /* psk0 is the only modifier; every other slot must be empty */
-    for (slot = 1; slot < NOISE_MAX_MODIFIER_IDS; ++slot) {
-        if (id->modifier_ids[slot] != NOISE_MODIFIER_NONE) {
-            *name = '\0';
-            return NOISE_ERROR_UNKNOWN_ID;
-        }
-    }
-    for (slot = 0; slot < sizeof(id->reserved) / sizeof(id->reserved[0]); ++slot) {
-        if (id->reserved[slot]) {
-            *name = '\0';
-            return NOISE_ERROR_UNKNOWN_ID;
-        }
     }
     noise_name_copy(name, noise_single_protocol_name,
                     sizeof(noise_single_protocol_name));

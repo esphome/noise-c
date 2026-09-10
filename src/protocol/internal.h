@@ -715,6 +715,12 @@ static inline NoisePatternFlags_t noise_pattern_reverse_flags(NoisePatternFlags_
 {
     return ((flags >> 8) & 0x00FF) | ((flags << 8) & 0xFF00);
 }
+#if !NOISE_USE_PROTOCOL_NAME_TABLE
+/* The one protocol a build without name tables speaks, names-single.c */
+int noise_single_protocol_check(const NoiseProtocolId *id);
+void noise_single_protocol_init_hash(uint8_t *h);
+#endif
+
 int noise_pattern_expand
     (uint8_t pattern[NOISE_MAX_TOKENS], int pattern_id,
      const int *modifiers, size_t num_modifiers);

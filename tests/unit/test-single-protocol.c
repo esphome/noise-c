@@ -35,6 +35,8 @@
 #define noise_protocol_id_to_name single_id_to_name
 #define noise_protocol_name_to_id single_name_to_id
 #define noise_pattern_expand single_pattern_expand
+#define noise_single_protocol_check single_protocol_check
+#define noise_single_protocol_init_hash single_protocol_init_hash
 #include "protocol/names-single.c"
 #include "protocol/patterns-single.c"
 #undef noise_protocol_id_to_name
@@ -106,6 +108,24 @@ void test_single_protocol(void)
     id.hash_id = NOISE_HASH_SHA256;
     compare_id_to_name(&id);
     compare(single_id_to_name(name, sizeof(name), &id), NOISE_ERROR_NONE);
+
+    /* The digest the reduced build starts a SymmetricState from must be
+       the SHA256 of the name, which is what the full build hashes */
+    {
+        NoiseHashState *hash = 0;
+        uint8_t digest[32];
+        uint8_t stored[32];
+        compare(noise_hashstate_new_by_id(&hash, NOISE_HASH_SHA256),
+                NOISE_ERROR_NONE);
+        compare(noise_hashstate_hash_one
+                    (hash, (const uint8_t *)name, strlen(name),
+                     digest, sizeof(digest)),
+                NOISE_ERROR_NONE);
+        single_protocol_init_hash(stored);
+        compare_blocks(stored, sizeof(stored), digest, sizeof(digest));
+        compare(single_protocol_check(&id), NOISE_ERROR_NONE);
+        noise_hashstate_free(hash);
+    }
     verify(!strcmp(name, "Noise_NNpsk0_25519_ChaChaPoly_SHA256"));
     compare_name_to_id("Noise_NNpsk0_25519_ChaChaPoly_SHA256");
 

@@ -45,6 +45,51 @@ void test_small_build(void)
             NOISE_ERROR_NONE);
     compare(noise_handshakestate_free(state), NOISE_ERROR_NONE);
 
+    /* A state made by id starts from the constant digest, one made by name
+       from hashing the name; the two must complete a handshake together */
+    {
+        static const uint8_t psk[32] = { 1, 2, 3 };
+        NoiseHandshakeState *initiator = 0;
+        NoiseHandshakeState *responder = 0;
+        uint8_t message[128];
+        uint8_t hash_i[32];
+        uint8_t hash_r[32];
+        NoiseBuffer buffer;
+        compare(noise_handshakestate_new_by_name
+                    (&initiator, single, NOISE_ROLE_INITIATOR),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_new_by_id
+                    (&responder, &id, NOISE_ROLE_RESPONDER),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_set_pre_shared_key(initiator, psk, 32),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_set_pre_shared_key(responder, psk, 32),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_start(initiator), NOISE_ERROR_NONE);
+        compare(noise_handshakestate_start(responder), NOISE_ERROR_NONE);
+        noise_buffer_set_output(buffer, message, sizeof(message));
+        compare(noise_handshakestate_write_message(initiator, &buffer, 0),
+                NOISE_ERROR_NONE);
+        noise_buffer_set_input(buffer, message, buffer.size);
+        compare(noise_handshakestate_read_message(responder, &buffer, 0),
+                NOISE_ERROR_NONE);
+        noise_buffer_set_output(buffer, message, sizeof(message));
+        compare(noise_handshakestate_write_message(responder, &buffer, 0),
+                NOISE_ERROR_NONE);
+        noise_buffer_set_input(buffer, message, buffer.size);
+        compare(noise_handshakestate_read_message(initiator, &buffer, 0),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_get_action(initiator), NOISE_ACTION_SPLIT);
+        compare(noise_handshakestate_get_action(responder), NOISE_ACTION_SPLIT);
+        compare(noise_handshakestate_get_handshake_hash(initiator, hash_i, 32),
+                NOISE_ERROR_NONE);
+        compare(noise_handshakestate_get_handshake_hash(responder, hash_r, 32),
+                NOISE_ERROR_NONE);
+        compare_blocks(hash_i, 32, hash_r, 32);
+        compare(noise_handshakestate_free(initiator), NOISE_ERROR_NONE);
+        compare(noise_handshakestate_free(responder), NOISE_ERROR_NONE);
+    }
+
     /* Every other protocol is unknown, and the out parameter is cleared */
     state = (NoiseHandshakeState *)8;
     compare(noise_handshakestate_new_by_name
