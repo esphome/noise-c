@@ -57,14 +57,14 @@ extern "C" {
  * \brief Length in bytes of an expanded message pattern: two flag bytes,
  * the tokens and the end marker.
  *
- * Without the name tables and hfs the one pattern is NNpsk0, eight bytes,
- * so every handshake state and the stack buffer it is built from shrink to
- * that; hfs would add tokens NNpsk0 has no room for.
+ * In the single pattern build the one pattern is NNpsk0, eight bytes, so
+ * every handshake state and the stack buffer it is built from shrink to
+ * that.
  */
-#if NOISE_USE_PROTOCOL_NAME_TABLE || NOISE_USE_HFS
-#define NOISE_MAX_TOKENS 64
-#else
+#if NOISE_SINGLE_PATTERN
 #define NOISE_MAX_TOKENS 8
+#else
+#define NOISE_MAX_TOKENS 64
 #endif
 
 /**
